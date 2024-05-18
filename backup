@@ -1,0 +1,72 @@
+#!/bin/bash
+# *****************************************************************************
+# File          : _BACKUP
+# Author        : ALX
+# Creation      : 2020-09-04
+# Last Revision : 2024-03-06
+# Description   : backup $1 to $2
+# *****************************************************************************
+
+#Finir par / (c'est important)
+SOURCE="${1}"
+DEST="${2}"
+LOGDIR=$(basename "$1")
+LOG="_BACKUPED"
+MESSAGE="backup ($SOURCE => $DEST)"
+PERM="root"
+
+if [[ $USER != $PERM ]]; then 
+		echo "Ce script doit être lancé en tant que ${PERM} !" 
+		exit 1
+	fi 
+
+if [[ ! -d "${SOURCE}" ]]; then
+    echo "ERROR : ${SOURCE} doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d "${DEST}" ]]; then
+    echo "ERROR : ${DEST} doesn't exist (directory)"
+    exit 1
+fi
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+ME=`basename "$0"`
+DATEBEGIN=$(date)
+echo $MESSAGE
+echo $ME                     > "${SOURCE}"/"${LOG}"
+echo $MESSAGE               >> "${SOURCE}"/"${LOG}"
+echo "Source : " $SOURCE    >> "${SOURCE}"/"${LOG}"
+echo "Dest   : " $DEST      >> "${SOURCE}"/"${LOG}"
+echo "Begin  : " $DATEBEGIN >> "${SOURCE}"/"${LOG}"
+
+rsync -avh --size-only --progress --delete "${SOURCE}" "${DEST}"
+
+# echo "SOURCE=${SOURCE}"
+# echo "LOG=${LOG}"
+# echo "DEST=${DEST}"
+# echo "LOGDIR=${LOGDIR}"
+
+DATEEND=$(date)
+echo "End    : " $DATEEND   >> "${SOURCE}"/"${LOG}"
+cp "${SOURCE}/${LOG}" "${DEST}"
+
+# exit shell script with 0 signal
+exit 0
