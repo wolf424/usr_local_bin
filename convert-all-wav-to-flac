@@ -1,0 +1,6 @@
+#!/bin/bash
+for f in *.wav; do
+    echo "Converting $f to flac"
+    sox -- "$f" "$(basename "$f" .wav).flac"
+    rm "$f"
+done

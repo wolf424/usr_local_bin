@@ -1,0 +1,4 @@
+#!/bin/bash
+cd "/home/alexandra/.wine/drive_c/Program Files (x86)/Gruntmods Studios/Dune 2000"
+wine DUNE2000.EXE
+

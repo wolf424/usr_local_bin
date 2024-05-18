@@ -1,0 +1,45 @@
+#!/usr/bin/python
+import eyed3
+import audio_metadata
+import re
+import os
+import sys
+import logging
+logging.basicConfig()
+logger = logging.getLogger('logger')
+# logger.warning('The system may break down')
+
+if (len(sys.argv)<1):
+    print "Usage:"
+    print sys.argv[0] + " [PATH]"
+    sys.exit("To few arguments")
+
+def getListOfFiles(dirName):
+    # create a list of file and sub directories 
+    # names in the given directory 
+    listOfFile = os.listdir(dirName)
+    allFiles = list()
+    # Iterate over all the entries
+    for entry in listOfFile:
+        # Create full path
+        fullPath = os.path.join(dirName, entry)
+        # If entry is a directory then get the list of files in this directory 
+        if os.path.isdir(fullPath):
+            print "Directory: " + fullPath
+            getListOfFiles(fullPath)
+        else:
+            if fullPath.endswith((".mp3", ".flac")):
+                try:
+                    audiofile = eyed3.load(unicode(fullPath,"utf-8"))
+                    metadata = audio_metadata.load(unicode(fullPath,"utf-8"))
+                    if metadata:
+                        print fullPath
+                        # For each pattern
+                        comment_txt = metadata['tags'].artist
+                        print comment_txt
+                except:
+                    print "No comment"
+
+dirName = sys.argv[1]
+print "Analysing " + sys.argv[1]
+getListOfFiles(dirName)

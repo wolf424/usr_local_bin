@@ -1,0 +1,24 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : sarbecovirus
+# File          : _BACKUP
+# Author        : ALX
+# Creation      : 2020-09-04
+# Last Revision : 2020-09-12
+# Description   : backup sarbecovirus to hdd-formicidae
+# *****************************************************************************
+
+DEST="/media/hdd-formicidae/sarbecovirus.bcp"
+backup "/usr/local/bin" "${DEST}"
+backup "/home/alexandra/backups" "${DEST}"
+backup "/home/alexandra/.thunderbird" "${DEST}"
+cp "/etc/fstab" "${DEST}"
+cp "/etc/group" "${DEST}"
+cp "/etc/hosts" "${DEST}"
+cp "/etc/passwd" "${DEST}"
+cp "/home/alexandra/.bashrc" "${DEST}"
+cp "/home/alexandra/.bash_aliases" "${DEST}"
+cp "/home/alexandra/.Xresources" "${DEST}"
+
+# exit shell script with 0 signal
+exit 0

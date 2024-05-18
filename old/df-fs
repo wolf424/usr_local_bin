@@ -1,0 +1,11 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : df-fs
+# Author        : ALX
+# Creation      : 2017-01-29
+# Last Revision : 2017-01-29
+# Description   : display mounted devices and filesystems
+# *****************************************************************************
+
+df -hT | awk '{print $1,$2,$3,$NF}' | grep "^/dev"

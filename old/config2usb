@@ -1,0 +1,75 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : eukarya
+# File          : config2usb
+# Author        : ALX
+# Creation      : 2020-03-13
+# Last Revision : 2021-01-16
+# Description   : backup config to hdd-formicidae
+# *****************************************************************************
+
+#Finir par / (c'est important)
+SOURCE=/home/alexandra
+DEST=/media/usb-config
+REFS=$DEST/ref
+REF=`hostname`
+LOG=_copied
+MESSAGE="COPY config ($REF => $DEST)"
+PERM="root"
+
+if [[ $USER != $PERM ]]; then 
+		echo "Ce script doit être lancé en tant que $PERM !" 
+		exit 1
+	fi
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+ME=`basename "$0"`
+DATEBEGIN=$(date)
+echo $MESSAGE
+echo $ME > $SOURCE/$LOG
+echo $MESSAGE                >> $SOURCE/$LOG
+echo "Source  : " $SOURCE    >> $SOURCE/$LOG
+echo "Dest    : " $DEST      >> $SOURCE/$LOG
+echo "Begin   : " $DATEBEGIN >> $SOURCE/$LOG
+
+mkdir -p $REFS/
+mkdir -p $REFS/$REF/
+cp /etc/hosts $REFS/$REF/hosts.$REF
+cp /etc/fstab $REFS/$REF/fstab.$REF
+cp /etc/passwd $REFS/$REF/passwd.$REF
+cp /etc/group $REFS/$REF/group.$REF
+cp $SOURCE/.bashrc $REFS/$REF/.bashrc.$REF
+cp $SOURCE/.bash_aliases $REFS/$REF/.bash_aliases.$REF
+rsync -avh --size-only --progress --delete /usr/local/bin $DEST/
+chmod 755 $DEST/bin/*
+
+echo "toto "
+echo $REFS/$REF/
+rsync -avh --size-only --progress --delete /mnt/nfs/home/_bookmarks $REFS/$REF
+rsync -avh --size-only --progress --delete /mnt/nfs/home/_fonts $REFS/$REF
+rsync -avh --size-only --progress --delete /mnt/nfs/home/_templates $REFS/$REF
+rsync -avh --size-only --progress --delete /mnt/nfs/home/_pics $REFS/$REF
+
+DATEEND=$(date)
+echo "End    : " $DATEEND   >> $SOURCE/$LOG
+cp $SOURCE/$LOG $DEST/$LOG
+
+# exit shell script with 0 signal
+exit 0

@@ -1,0 +1,18 @@
+# Netscape HTTP Cookie File
+# http://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file!  Do not edit.
+
+.google.fr	TRUE	/	TRUE	1705370032	CONSENT	YES+srp.gws-20220111-0-RC3.fr+FX+558
+.google.fr	TRUE	/	FALSE	1722301942	HSID	AyUScAo1AI3IZyoRO
+.google.fr	TRUE	/	TRUE	1722301942	SSID	A5wVNIEZlCNYZXuUz
+.google.fr	TRUE	/	FALSE	1722301942	APISID	FssVY0ykJ0QiV734/AKJ1ROuAgdsbtziIl
+.google.fr	TRUE	/	TRUE	1722301942	SAPISID	SvT0VjcmaevXvHha/ARhIrdgIgSEHfUlQm
+.google.fr	TRUE	/	TRUE	1722301942	__Secure-1PAPISID	SvT0VjcmaevXvHha/ARhIrdgIgSEHfUlQm
+.google.fr	TRUE	/	TRUE	1722301942	__Secure-3PAPISID	SvT0VjcmaevXvHha/ARhIrdgIgSEHfUlQm
+.google.fr	TRUE	/	FALSE	1722301942	SID	MwjdTSsSqUgvQCoUorbdX-uCZ9guKuF5o5d2gbZAzpJY-Wkl2FP8Vebpf8HwVqoYdfhmIA.
+.google.fr	TRUE	/	TRUE	1722301942	__Secure-1PSID	MwjdTSsSqUgvQCoUorbdX-uCZ9guKuF5o5d2gbZAzpJY-Wklnmk6LjgMwMQ5tMZ6SS3cbw.
+.google.fr	TRUE	/	TRUE	1722301942	__Secure-3PSID	MwjdTSsSqUgvQCoUorbdX-uCZ9guKuF5o5d2gbZAzpJY-Wkl3tLKwQEPB5MDs2AvbglnsQ.
+.google.fr	TRUE	/	TRUE	1661821943	1P_JAR	2022-07-31-01
+.google.fr	TRUE	/	TRUE	1674781942	AEC	AakniGMAtaleSlhdZMRoT5bcVjE0aPtYoMyhcBZRKQKrnotHq1YpWCkF7lg
+ogs.google.fr	FALSE	/	TRUE	1661821947	OTZ	6615432_48_52_123900_48_436380
+.google.fr	TRUE	/	TRUE	1675041148	NID	511=pITed6MgcLUpJ7Mdx8kQaHdV8JvvdsDYLnxfl21wEUSwXjPaCEBkNwKH7hOsZDUW1rpkg7DRRkbwXPaUbt7TrK06gZwAUq6p_3eoi6wFfe0xcSivh_6rfo6kc27pm0ZRExeXFVvQYl9zWK4vDBbIgVOxE7EGfuf8SkvMmBmDczwuinbLHdNhNsEv09pXVHZjHoR6w9sYr-macEGR2AL4VBpIKnxU31-PCjgPwHs7dVdOsh1dKGUkNNbVyCIa8sVXpHtN

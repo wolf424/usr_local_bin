@@ -1,0 +1,3 @@
+#!/bin/bash
+# Source : https://ubuntuforums.org/showthread.php?t=1946193
+for f in *.VOB ; do ffmpeg -i "$f" "${f%.VOB}.flac"; done

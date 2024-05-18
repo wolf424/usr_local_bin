@@ -1,0 +1,65 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : yt-lounge
+# Author        : ALX
+# Creation      : 2019-09-12
+# Last Revision : 2019-09-12
+# Description   : download youtube playlist "#lounge"
+# *****************************************************************************
+
+#Finir par / (c'est important)
+SOURCE=https://www.youtube.com/playlist?list=PLdyk7EYQBBD71pY5VaTwgSZTpXcVOEmBA
+DEST="/mnt/music.s/video/clips/yt-lounge/"
+MESSAGE="DOWNLOAD Youtube ($SOURCE => $DEST)"
+PERM="alexandra"
+
+if [[ $USER != $PERM ]]; then 
+		echo "Ce script doit être lancé en tant que $PERM !" 
+		exit 1
+	fi 
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+if [ -d "$DEST" ]; then
+  ### Take action if $DEST exists ###
+  cd $DEST
+  ME=`basename "$0"`
+  DATEBEGIN=$(date)
+  echo $MESSAGE
+  echo $ME > $DEST/_downloaded
+  echo $MESSAGE               >> $DEST/_downloaded
+  echo "Source : " $SOURCE    >> $DEST/_downloaded
+  echo "Dest   : " $DEST      >> $DEST/_downloaded
+  echo "Begin  : " $DATEBEGIN >> $DEST/_downloaded
+  echo "[$SOURCE]"
+  youtube-dl -U
+  youtube-dl -f mp4 $SOURCE
+else
+  ###  Control will jump here if $DIR does NOT exists ###
+  echo "Error: ${DEST} not found. Can not continue."
+  exit 1
+fi
+cd $DEST
+
+DATEEND=$(date)
+echo "End    : " $DATEEND   >> $DEST/_downloaded
+
+# exit shell script with 0 signal
+exit 0

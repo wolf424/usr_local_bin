@@ -1,0 +1,90 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Host          : eukarya
+# File          : yt-dl
+# Author        : ALX
+# Creation      : 2022-04-25
+# Last Revision : 2022-07-31
+# Description   : download playlist from youtube
+# Release       : 1.04
+# *****************************************************************************
+
+# TODO
+# -
+
+# RELEASES :
+# - 1.01 : Init
+# - 1.02 : playlist_index
+# - 1.03 : format selection
+# - 1.04 : update cookies file
+
+# BUGS
+# -
+
+# FEATURES
+# -
+
+# *****************************************************************************
+# INCLUDE
+
+source bash-common # include common bash library
+
+# *****************************************************************************
+# FLAGS
+
+FLAG_DEBUG=0 # debug mode off
+
+# *****************************************************************************
+# GLOBAL VARIABLES
+
+ALREADY="_already_downloaded.txt"
+# install the Get Cookies extension in Chrome
+# This extension allows users to export cookies for a site as a text file
+YOUTUBEDL=/usr/local/bin/yt-dlp
+#YOUTUBEDL=/usr/local/bin/youtube-dl
+# YOUTUBEDL=echo
+COOKIES=/usr/local/bin/youtube.com_cookies.txt
+BASENAME="$0"
+
+# *****************************************************************************
+# FUNCTIONS
+
+display_usage() { 
+    echo -e "$BASENAME download playlist from youtube\n"
+    echo -e "Usage: $BASENAME [OPTIONS] URL\n"
+    echo "URL"
+    echo "  URL of the youtube playlist"
+    echo "  Downloaded files will be registered in $ALREADY"
+    echo "  In the future, they won't be downloaded again"
+    echo ""
+    echo "OPTIONS"
+    echo "  Options will be transmitted to youtube-dl"
+} 
+
+# *****************************************************************************
+# PARSE COMMAND LINE PARAMETERS
+
+ARGS="$@"
+
+# if less than one arguments supplied, display usage 
+if [  $# -le 0 ] 
+then 
+    echoerr "missing arguments"
+    display_usage
+    exit 1
+fi 
+
+# *****************************************************************************
+# MAIN
+
+OPT="$1"
+#cf https://github.com/ytdl-org/youtube-dl#user-content-format-selection-examples
+$YOUTUBEDL -if 'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best' \
+	--download-archive $ALREADY \
+	-o "%(upload_date)s - %(uploader)s - %(playlist_index)s - %(title)s - %(id)s.%(ext)s"\
+	--all-subs --convert-subs srt --cookies "$COOKIES" \
+	"$1" --verbose $ARGS
+
+#  youtube-dl -U && youtube-dl -if mp4 --all-subs --convert-subs srt --cookies "usr/local/bin/google.fr_cookies.txt" --cookies "/usr/local/bin/youtube.com_cookies.txt" -u "zdena.sevicesalapersonne@gmail.com" $SOURCE
+
+# -o OUTPUT_TEMPLATE : https://github.com/ytdl-org/youtube-dl/#OUTPUT-TEMPLATE

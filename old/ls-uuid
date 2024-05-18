@@ -1,0 +1,11 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : ls-uuid
+# Author        : ALX
+# Creation      : 2017-01-29
+# Last Revision : 2017-03-20
+# Description   : display mounted devices by uuid
+# *****************************************************************************
+
+ls -l /dev/disk/by-uuid

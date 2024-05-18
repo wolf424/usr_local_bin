@@ -1,0 +1,13 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : rm-emptydirs
+# Author        : ALX
+# Creation      : 2017-07-27
+# Last Revision : 2017-07-27
+# Description   : Remove empty directories
+# *****************************************************************************
+
+#!/bin/bash
+
+find . -type d -empty -exec rmdir '{}' \;

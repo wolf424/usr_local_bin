@@ -1,0 +1,3 @@
+#!/bin/bash
+mount /mnt/colibri
+mount /mnt/music.s

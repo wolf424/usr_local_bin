@@ -1,0 +1,176 @@
+#!/bin/bash -e
+# *****************************************************************************
+# Host          : centroleninae
+# File          : mirrors_update
+# Author        : ALX
+# Creation      : 2020-07-19
+# Last Revision : 2020-07-24
+# Description   : Mirror directory contents from sarbecovirus
+# *****************************************************************************
+
+# ------------------------------------------------------------------------------
+# CONSTANTS
+
+FNAME_MIRROR_LOG="_MIRROR"
+FNAME_MIRRORS_LOG="_MIRRORS"
+FNAME_MIRROR_UPDATE="MIRRORS_UPDATE"
+
+# ------------------------------------------------------------------------------
+# COMMAND LINE PARAMETERS
+
+if [[ $# -lt 4 ]]; then
+    echo "Usage:"
+    echo $0 "[server_base]" "[client_base]" "requested_user" "branch1" "branch2" "..."
+    echo
+    echo "Example:"
+    echo $0 "/mnt/sarbecovirus" "/home/alexandra/Documents" "alexandra" "_templates" "_fonts" "_bookmarks" "\"_docs/ebooks/Bibliothèque calibre\""
+    exit 1
+fi
+
+
+SERVER_BASE="${1}" # do not end with /
+# SERVER_BASE=/mnt/sarbecovirus # important : pas de / en fin de chaine
+
+CLIENT_BASE="${2}" # do not end with /
+# Example : /home/alexandra/Documents
+
+USER_REQUESTED="${3}"
+# Example: alexandra
+
+# for i in "$@"; do echo $i ; done
+
+# ------------------------------------------------------------------------------
+# DEBUG
+
+echo "SERVER_BASE="${SERVER_BASE}
+echo "CLIENT_BASE="${CLIENT_BASE}
+echo "USER_REQUESTED="${USER_REQUESTED}
+
+# ------------------------------------------------------------------------------
+# INIT
+
+THIS_SCRIPT=`basename "$0"`
+echo ${THIS_SCRIPT}":" ${CLIENT_BASE} "<=" ${SERVER_BASE}
+mount $SERVER_BASE
+
+# ------------------------------------------------------------------------------
+# CONTROLS
+
+
+if [[ $USER != $USER_REQUESTED ]]; then 
+    echo "ERROR : you are not $USER_REQUESTED !" 
+    exit 1
+fi
+
+if [[ ! -d $SERVER_BASE ]]; then
+    echo "ERROR : $SERVER_BASE doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d $CLIENT_BASE ]]; then
+    echo "ERROR : $CLIENT_BASE doesn't exist (directory)"
+    exit 1
+fi
+
+# ------------------------------------------------------------------------------
+# FUNCTIONS
+
+cleanup() # clean up if user hits control-c
+{
+  echo "Aborted..."
+  return $?
+}
+ 
+control_c() # run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+
+create_dir() # create directory if needed
+{
+    if [[ ! -d "$1" ]]
+    then
+	echo "$1" "is created"
+	mkdir -p "$1"
+    fi
+}
+
+bring_branch() # bring branch $1 to CLIENT_BASE from SERVER_BASE using rsync
+{
+    BRANCH=$1 # ex : _fonts
+    echo "-" ${BRANCH} >> ${MIRRORS_LOG}
+
+    SERVER_DIR="${SERVER_BASE}/${BRANCH}/" # ex : /mnt/sarbecovirus/_fonts/
+    if [[ ! -d "$SERVER_DIR" ]]; then
+        echo "Error:" "Directory $SERVER_DIR" "doesn't exist"
+        exit 1
+    fi
+
+    CLIENT_DIR="${CLIENT_BASE}/${BRANCH}/" # ex : /home/alexandra/Documents/
+    echo "CLIENT_DIR="${CLIENT_DIR}
+    create_dir "${CLIENT_DIR}"
+
+    DIRNAME=$(dirname "$CLIENT_DIR") # echo "DIRNAME=["${DIRNAME}"]"
+    BASENAME=$(basename "$CLIENT_DIR") # echo "BASENAME=["${BASENAME}"]"
+
+    echo
+    echo "Mirror:"
+    echo "${SERVER_DIR}" "<=" "${DIRNAME}/${BASENAME}"
+    echo "# rsync" -avh --size-only --progress --delete "${SERVER_DIR}" "${DIRNAME}/${BASENAME}"
+    rsync -avh --size-only --progress --delete "${SERVER_DIR}" "${DIRNAME}/${BASENAME}"
+
+    echo "FNAME_MIRROR_LOG="${FNAME_MIRROR_LOG}
+    MIRROR_LOG="${DIRNAME}/${BASENAME}/${FNAME_MIRROR_LOG}"
+    echo "MIRROR_LOG="${MIRROR_LOG}
+    echo "CLIENT_DIR="                    > "${MIRROR_LOG}"
+    echo "${DIRNAME}"/"${BASENAME}"      >> "${MIRROR_LOG}"
+    echo "is a mirror from"              >> "${MIRROR_LOG}"
+    echo "SERVER_BASE="                  >> "${MIRROR_LOG}"
+    echo ${SERVER_BASE}                  >> "${MIRROR_LOG}"
+    echo "CLIENT_BASE="                  >> "${MIRROR_LOG}"
+    echo ${CLIENT_BASE}                  >> "${MIRROR_LOG}"
+    echo                                 >> "${MIRROR_LOG}"
+    echo "Use command "${CLIENT_BASE}/${FNAME_MIRROR_UPDATE}]" to update" >> "${MIRROR_LOG}"
+    echo "$0 is needed"                  >> "${MIRROR_LOG}"
+    echo "Last mirror update:"           >> "${MIRROR_LOG}"
+    echo $(date)                         >> "${MIRROR_LOG}"
+}
+
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+# ------------------------------------------------------------------------------
+# WRITE _MIRRORS
+
+MIRRORS_LOG="${CLIENT_BASE}/${FNAME_MIRRORS_LOG}"
+echo "This directory contains sub-directories that are mirrors"  > "${MIRRORS_LOG}"
+echo "Use command ./${FNAME_MIRROR_UPDATE} to update"         >> "${MIRRORS_LOG}"
+echo "$0 is needed"                                 >> "${MIRRORS_LOG}"
+echo "Server base:" ${SERVER_BASE}                    >> "${MIRRORS_LOG}"
+echo "Client base:" ${CLIENT_BASE}                        >> "${MIRRORS_LOG}"
+
+# ------------------------------------------------------------------------------
+# BRING DIRECTORIES
+
+i=0
+for BRANCH in "$@"; do
+    i=$(($i + 1))
+    if (( $i > "3" )) ; then
+	bring_branch "${BRANCH}" # debug : echo ":"${BRANCH}":"
+    fi
+done
+
+# ------------------------------------------------------------------------------
+# CLOSE MIRRORS_LOG
+
+DATEEND=$(date)
+echo "Last mirrors update:" $(date)    >> ${MIRRORS_LOG}
+echo "Done. Logged in:" ${MIRRORS_LOG}
+
+# ------------------------------------------------------------------------------
+# EXIT
+
+# exit shell script with 0 signal
+exit 0

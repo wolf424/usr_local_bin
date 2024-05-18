@@ -1,0 +1,1 @@
+make -f /home/alexandra/makeEspArduino/makeEspArduino.mk ESP_ROOT=/home/alexandra/esp32 CHIP=esp32 "$@"

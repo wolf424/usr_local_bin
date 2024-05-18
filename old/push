@@ -1,0 +1,76 @@
+#!/bin/bash -e
+# *****************************************************************************
+# Host          : *
+# File          : push
+# Author        : ALX
+# Creation      : 2020-07-22
+# Last Revision : 2020-07-25
+# Description   : Push files or directories to main mirror repository
+#                 See also mirror_update
+# *****************************************************************************
+
+# ------------------------------------------------------------------------------
+# CONSTANTS
+
+FNAME_MIRROR_LOG="_MIRROR"
+FNAME_MIRRORS_LOG="_MIRRORS"
+FNAME_MIRRORS_UPDATE="MIRRORS_UPDATE"
+
+# ------------------------------------------------------------------------------
+# FUNCTIONS
+
+analyze_mirror_log () {
+    # cd .. until FNAME_MIRROR_LOG (ex: _MIRRORS) can be read and analyzed
+    RUN_PATH="$PWD"
+    DIRNAME=`dirname "${1}"`
+    cd "${DIRNAME}"
+    DIRNAME=`pwd`
+    cd "${RUN_PATH}"
+    BASENAME=`basename "${1}"`
+    while [[ ! -f "${FNAME_MIRROR_LOG}" ]]; do
+	cd ..
+	if [[ "`pwd`" = "/" ]]; then
+	    echo "Error: ${FNAME_MIRROR_LOG} not found"
+	    exit 1
+	fi
+    done # debug: cat ${FNAME_MIRROR_LOG}
+
+    # Analyzing
+    echo "Reading `pwd`/${FNAME_MIRROR_LOG}"
+    CLIENT_BRANCH=`sed -n "2 p" ${FNAME_MIRROR_LOG}` # 2nd line of _MIRRORS
+    echo "CLIENT_BRANCH=${CLIENT_BRANCH}"
+    # ex: /home/alexandra/Vidéos/_vids/sci
+    SERVER_BASE=`sed -n "5 p" ${FNAME_MIRROR_LOG}` # 5th line of _MIRRORS
+    echo "SERVER_BASE=${SERVER_BASE}"
+    # ex: /home/alexandra/Vidéos/_vids/sci
+    CLIENT_BASE=`sed -n "7 p" ${FNAME_MIRROR_LOG}` # 7th line of _MIRRORS
+    echo "CLIENT_BASE=${CLIENT_BASE}"
+    # ex : /home/alexandra/Vidéos
+    CLIENT_DIR="${DIRNAME}"
+    echo "CLIENT_DIR=${CLIENT_DIR}"
+    # Remove base from directory name
+    REL_DIR="${CLIENT_DIR/${CLIENT_BASE}\//}"
+    REL_DIR="${REL_DIR%/}" # remove last /
+    echo "REL_DIR=${REL_DIR}"
+    SERVER_DIR="${SERVER_BASE}/${REL_DIR}"
+    echo "SERVER_DIR=${SERVER_DIR}"
+    cd "${RUN_PATH}"
+}
+
+# ------------------------------------------------------------------------------
+# MAIN
+
+for file in "$@" 
+do
+    echo "file="${file}
+    analyze_mirror_log "${file}"
+    if [[ -d "${file}" ]]; then
+	echo "${CLIENT_DIR}/${BASENAME}" "=>" "${SERVER_DIR}"
+	echo "# rsync" -avh --size-only --progress --delete "${CLIENT_DIR}/${BASENAME}" "${SERVER_DIR}"
+	rsync -avh --size-only --progress --delete "${CLIENT_DIR}/${BASENAME}" "${SERVER_DIR}"
+    else
+	echo "${CLIENT_DIR}/${BASENAME}" "=>" "${SERVER_DIR}"
+	cp "${CLIENT_DIR}/${BASENAME}" "${SERVER_DIR}"
+    fi
+    echo
+done

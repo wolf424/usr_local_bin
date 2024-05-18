@@ -1,0 +1,228 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Host          : eukarya
+# File          : bash-sample
+# Author        : ALX
+# Creation      : 2022-01-21
+# Last Revision : 2022-01-21
+# Description   : Code samples with my libs
+# *****************************************************************************
+
+set -Eeuo pipefail
+# -e : script will will exit at the first error
+# -E : ensures that ERR traps get inherited by functions, command substitutions, and subshell environments
+# -u : treats unset variables as errors
+# -o pipefail : normally bash pipelines only return the exit code of the last command. This option will propagate intermediate errors
+
+# *****************************************************************************
+# INCLUDE
+
+source bash-common # include common bash library
+
+# *****************************************************************************
+# FLAGS
+
+FLAG_DEBUG=1 # debug mode on
+FLAG_VERBOSE=true # verbose mode on
+
+# *****************************************************************************
+# SAMPLES
+
+# Divide 2 numbers, return error 42 if $2 == 0
+function division() {
+    if [[ ($2 == 0) ]]; then
+	echowarn "division by zero in $FUNCNAME"
+	return 42
+    fi
+    res=$(( $1/$2 ))
+    echo "$1 \/ $2 = $res"
+    return 0
+}
+
+sudo_by_advance() {
+    echofunc "$FUNCNAME" "$@"
+
+    sudo_ask # ask for sudo password
+    sudo_test # test if 3 password fails
+    if [[ ! ($? == 0) ]]; then
+	echoerr "Ending program"
+	exit 1
+    else
+	echodebug "password OK"
+    fi
+}
+
+# trap SIGINT
+# infinite loop that can be interrupted by CTRL-C
+infinite_ctrl-c() {
+    echo "Press CTRL-C to exit program"
+    trap "{ echo 'Bye!' ; exit 0; }" SIGINT
+    while true ; do sleep 1 ; done
+}
+
+# trap EXIT
+# run a command on program exit
+run_on_exit() {
+    trap "echo 'Program has ended'" EXIT
+    echo "Beginning"
+}
+
+# run a non existing command and notify the err signal
+an_error_notify() {
+    trap notify_err ERR
+    nonexisting_command 2> /dev/null
+    echo "This will never be displayed"
+}
+
+# run a non existing command and catch the err signal
+an_error_catch() {
+    if ! nonexisting_command 2> /dev/null; then
+	echowarn "Catch the error (1)"
+    fi
+    echo "This will be displayed (1)"
+}
+
+# run a non existing command and catch the err signal
+an_error_catch2() {
+    trap notify_err ERR
+    if ! nonexisting_command 2>/dev/null; then
+	echowarn "catching the error (2)"
+    fi
+    echo "This will be displayed (2)"
+}
+
+# run a function that returns error and catch the err signal
+an_error_catch3() {
+    division 10 0 || echowarn "catching the error (3)"
+    echo "This will be displayed (3)"
+}
+
+# run a function that returns error and catch the err signal
+an_error_catch4() {
+    echo "Computing 10/0 :"
+    if ! division 10 0; then
+	echowarn "catching the error (4)"
+    fi    
+    echo "This will be displayed (4)"
+}
+
+# run a function that returns error and catch the err signal
+an_error_catch5() {
+    export ERR_DIV=100
+    export ERR_MOUNT=101
+    local runcmd=$1
+
+    echo2 "try {"
+    try
+    (
+	# When a command returns a non-zero, a custom exception is raised.
+	case $runcmd in
+	    1)
+		echo "Divide by zero => throw ERR_DIV"
+		division 10 0 || throw $ERR_DIV
+		;;
+	    2)
+		echo "Mount non existing drive => throw ERR_MOUNT"
+		mount /mnt/nothing || throw $ERR_MOUNT
+		;;
+	    3)
+		echo "Run non existing command => throw ERR_BAD"
+		nonexisting_command 2> /dev/null || throw $ERR_BAD
+		;;
+	    4)
+		echo "Run non existing command => throw ERR_CRITICAL"
+		nonexisting_command 2> /dev/null || throw $ERR_CRITICAL
+		;;
+	    *)
+		echo "Divide by zero (no throw)"
+		division 10 0
+		;;
+	esac
+	# This statement is not reached if there is any exception raised
+	# inside the try block.
+	echolog "There is no exception raised"
+    )
+    catch || {
+	case $exception_code in
+            $ERR_DIV)
+		echowarn "division by zero"
+		;;
+            $ERR_MOUNT)
+		echowarn "mount impossible"
+		;;
+            $ERR_BAD)
+		echowarn "} => aborting function  $FUNCNAME"
+		return $ERR_BAD # abort this function (don't exit the program)
+		;;
+            *)
+		echoerr "} => exiting the program"
+		throw $ERR_CRITICAL # re-throw an unhandled exception (exits the program)
+		;;
+	esac
+    }
+    echo "This will be displayed (5)"
+}
+
+an_error_catch6() {
+
+    # Divide by zero => ERR_DIV is caught by the subroutine that returns 0
+    echo "Example 1:"
+    an_error_catch5 1 || exit 1
+    echo -e "This will be displayed (6)\n"
+
+    # Run non existing command => ERR_BAD is cauchgt by the subroutine that aborts and returns ERR_BAD
+    echo "Example 2:"
+    an_error_catch5 3
+    echo -e "This will be displayed (6)\n"
+
+    # Run non existing command => ERR_BAD is caught by the subroutine that aborts and returns ERR_BAD
+    echo "Example 3:"
+    an_error_catch5 3 || echowarn "Aborted (6)"
+    echo -e "This will be displayed (6)\n"
+
+    # Run non existing command => ERR_BAD is caught by the subroutine that aborts and returns ERR_BAD
+    # ERR_BAD is caught here to abort this function
+    echo "Example 4:"
+    echo2 "try {"
+    try
+    (
+        # throws ERR_BAD
+	an_error_catch5 3 || throw $ERR_BAD
+	echo -e "}"
+    )
+    catch || {
+	case $exception_code in
+            $ERR_BAD)
+		echowarn "} => aborting function  $FUNCNAME"
+		return $ERR_BAD # abort this function (don't exit the program)
+		;;
+            *)
+		echoerr "} => exiting the program"
+		throw $ERR_CRITICAL # re-throw an unhandled exception (exits the program)
+		;;
+	esac
+    }
+    echo -e "This will not be displayed (6)\n"
+
+    # Run non existing command => ERR_CRITICAL is caught by the subroutine that exits program
+    echo "Example 5:"
+    an_error_catch5 4
+    echo "This will never be displayed (6)"
+}
+
+# *****************************************************************************
+# MAIN
+
+trap notify_err ERR
+
+# Show flag status
+echodebug "FLAG_DEBUG = $FLAG_DEBUG"
+echodebug "FLAG_VERBOSE = $FLAG_VERBOSE"
+
+echo -e "Program begins\n"
+
+check_mount "/mnt/broadcast"
+
+echo -e "Program continues...\n"
+
+echo "Program ends"

@@ -1,0 +1,3 @@
+#!/bin/bash
+cd /home/alexandra/Slic3r
+./slic3r

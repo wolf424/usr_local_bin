@@ -1,0 +1,12 @@
+#!/bin/bash
+clean_file()
+{
+    DIRNAME=$(dirname "${1}")
+    BASENAME=$(basename "${1}")
+    NEWBASENAME=${BASENAME/#"+"/}
+    echo "${BASENAME} => ${NEWBASENAME}"
+    mv "${DIRNAME}/${BASENAME}" "${DIRNAME}/${NEWBASENAME}"
+    clementine -a "${DIRNAME}/${NEWBASENAME}"
+}
+export -f clean_file
+find "/mnt/music.s/jukebox" . -type f -name '+*.*' -exec bash -c 'clean_file "$0"' {} \;

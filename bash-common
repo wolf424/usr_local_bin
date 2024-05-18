@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# -----------------------------------------------------------------------------
+# Host          : eukarya
+# File          : bash-common
+# Author        : ALX
+# Creation      : 2022-01-21
+# Last Revision : 2022-01-21
+# Description   : Common lib for bash scripts
+# *****************************************************************************
+
+set -Eeuo pipefail
+# -e : script will will exit at the first error
+# -E : ensures that ERR traps get inherited by functions, command substitutions, and subshell environments
+# -u : treats unset variables as errors
+# -o pipefail : normally bash pipelines only return the exit code of the last command. This option will propagate intermediate errors
+
+# *****************************************************************************
+# PATHS
+
+export SYNC_PATH="/mnt/colibri/config.s/sync"
+
+# *****************************************************************************
+# FLAGS
+
+FLAG_DEBUG=1 # debug mode off (by default)
+FLAG_VERBOSE=true # verbose mode on (by default)
+
+# *****************************************************************************
+# ERROR HANDLING
+
+export ERR_CRITICAL=1 # Critical error (immediately abort program)
+export ERR_BAD=2 # Bad error (abord program if not catched)
+
+# *****************************************************************************
+# CALLBACKS
+
+# A callback for error catching
+# Usage:
+# trap notify_err ERR
+function notify_err() {
+    echoerr "line $(caller): ${BASH_COMMAND}"
+}
+
+# *****************************************************************************
+# FUNCTIONS
+
+# echo on stderr
+echo2() {
+    printf "%s\n" "$*" >&2
+}
+
+# echo log on stderr
+echolog() {
+    printf "Log: %s\n" "$*" >&2
+}
+
+# echo warning on stderr
+echowarn() {
+    printf "Warning: %s\n" "$*" >&2
+}
+
+# echo error on stderr
+echoerr() {
+    printf "Error: %s\n" "$*" >&2
+}
+
+# echo on stderr only if FLAG_DEBUG != 0
+echodebug() {
+    if [[ ! ($FLAG_DEBUG == 0) ]]; then
+	printf "Debug: %s\n" "$*" >&2
+    fi
+}
+
+# echo on stderr only if FLAG_DEBUG != 0
+echofunc() {
+    local s=""
+    local i=0
+    for item in "${@}"; do
+	((i+=1))
+	[[ ($i > 1) ]] && s+=" \""$item"\""
+    done
+    echodebug "function call $1 $s"
+}
+
+# cf https://www.xmodulo.com/catch-handle-errors-bash.html
+function try()
+{
+    [[ $- = *e* ]]; SAVED_OPT_E=$?
+    set +e
+}
+
+# cf https://www.xmodulo.com/catch-handle-errors-bash.html
+function throw()
+{
+    exit $1
+}
+
+# cf https://www.xmodulo.com/catch-handle-errors-bash.html
+function catch()
+{
+    export exception_code=$?
+    (( $SAVED_OPT_E )) && set +e
+    return $exception_code
+}
+
+# return 1 (error) if not root
+check_root() {
+    echofunc "$FUNCNAME" "$@"
+    if [[ "$EUID" -ne 0 ]]; then 
+	echoerr "This script must be run as root!" 
+	return 1
+    fi
+}
+
+# Ask sudo password (in advance for future commands that need root)
+# Exit program after 3 wrong passwords
+sudo_ask () {
+    echofunc "$FUNCNAME" "$@"
+    sudo echo >> /dev/null
+}
+
+# Mount all drives given in argument
+check_mount() {
+    echofunc "$FUNCNAME" "$@"
+    [[ ($# < 1) ]] && (echoerr "$FUNCNAME requires 1 or more arguments"; exit 1)
+
+    for item in "${@}"; do
+	local dir=$(readlink -f "$item") # expand filename
+	if grep -qs "$dir " /proc/mounts; then
+	    if [[ $FLAG_VERBOSE == true ]]; then
+		echolog "$dir is already mounted."
+	    fi
+	else
+	    [[ $FLAG_VERBOSE == true ]] && echolog "$dir isn't mounted."
+	    mount "$dir" 2>/dev/null || (echoerr "Error: $dir cannot be mounted."; exit 1)
+	    if grep -qs "$dir " /proc/mounts; then
+		if [[ $FLAG_VERBOSE == true ]]; then
+		    echolog "$dir is mounted now."
+		fi
+	    fi
+	fi
+    done
+}

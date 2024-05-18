@@ -1,0 +1,9 @@
+#!/bin/bash
+# Synthèse vocale
+# Lit la phrase $1 en français
+# sudo apt install libttspico-utils
+
+tmp=$(mktemp /tmp/say.XXXXXX.wav)
+pico2wave -l "fr-FR" -w=$tmp "$1"
+aplay -q $tmp
+rm "$tmp"

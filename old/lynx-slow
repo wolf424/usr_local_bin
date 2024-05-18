@@ -1,0 +1,7 @@
+#!/bin/bash
+cpufreq-set -g userspace
+cpufreq-set -c 0 -d 933MHz
+cpufreq-set -c 0 -u 1.33GHz
+cpufreq-set -c 1 -d 933MHz
+cpufreq-set -c 1 -u 1.33GHz
+cpufreq-info | grep actuelle

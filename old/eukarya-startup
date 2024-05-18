@@ -1,0 +1,14 @@
+#!/bin/bash
+# Eukarya startup script
+
+# go to the tty2
+# chvt 2
+# show the message
+# dialog --msgbox "Hello world!" 10 40
+# go back to tty1
+# chvt 1
+
+# rfkill block bluetooth
+
+# exit this code 0 (everything ok)
+exit 0

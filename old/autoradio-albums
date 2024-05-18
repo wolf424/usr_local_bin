@@ -1,0 +1,60 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : autoradio-albums
+# Author        : ALX
+# Creation      : 2017-05-08
+# Last Revision : 2017-05-08
+# Description   : update /mnt/music.s/_autoradio/albums
+# *****************************************************************************
+
+#!/bin/bash
+
+#Finir par / (c'est important)
+SOURCE=/mnt/music.s/jukebox/
+DEST=/home/alexandra/Musique/r-albums/
+MESSAGE="UPDATE AUTORADIO ($DEST)"
+PERM="root"
+
+if [[ $USER != $PERM ]]; then 
+		echo "Ce script doit être lancé en tant que $PERM !" 
+		exit 1
+	fi 
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+ME=`basename "$0"`
+DATEBEGIN=$(date)
+echo $MESSAGE
+echo $ME > $SOURCE/_backuped
+echo $MESSAGE               >> $DEST/_updated
+echo "Source : " $SOURCE    >> $DEST/_updated
+echo "Dest   : " $DEST      >> $DEST/_updated
+echo "Begin  : " $DATEBEGIN >> $DEST/_updated
+
+
+rm -rvf $DEST/*
+# find $SOURCE -type d -path "*/++*" ! -path "*@eaDir*" ! -path "*/_classique/*" -exec ls -ld '{}' \;
+find $SOURCE -type d -path "*/++*" ! -path "*@eaDir*" ! -path "*/_classique/*" -exec cp -Rv '{}' $DEST \;
+
+DATEEND=$(date)
+echo "End    : " $DATEEND   >> $DEST/_updated
+
+# exit shell script with 0 signal
+exit 0

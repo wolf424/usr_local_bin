@@ -1,0 +1,4 @@
+#!/bin/bash
+qrencode -s 10 -o /tmp/qr.png $1
+display /tmp/qr.png
+wipe -f /tmp/qr.png

@@ -1,0 +1,22 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : checkifraspbian
+# Author        : ALX
+# Creation      : 2018-08-20
+# Last Revision : 2018-08-20
+# Description   : Check if hardware is raspbian
+# *****************************************************************************
+
+RASPBIAN="arm"
+OS=`uname -m`
+
+if [[ $OS = *$RASPBIAN* ]]; then
+    echo "You're on raspbian"
+    exit 0
+fi
+
+echo "You're not on raspbian"
+
+# exit shell script with 0 signal
+exit 0

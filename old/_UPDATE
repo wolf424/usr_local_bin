@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+sudo rcp -v alexandra@sarbecovirus:/usr/local/bin/* /usr/local/bin

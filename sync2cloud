@@ -1,0 +1,323 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Host          : eukarya
+# File          : sync2cloud
+# Author        : ALX
+# Creation      : 2022-01-19
+# Last Revision : 2022-11-19
+# Description   : Synchronize directories or files from the a local directory to the cloud
+# Release       : 1.02
+# *****************************************************************************
+
+# RELEASES
+# - 1.01 : adding DOTSYNCS to exclude DOTSYNC files from other computer while deleting
+# - 1.02 : eval DOTSYNC file to develop directory name store in variable
+#
+# BUGS
+# - Erreur si je sync2cloud un fichier depuis le répertoire contenant .sync.sarbecovirus vers le cloud
+
+#set -x # bash debugger
+set -Eeuo pipefail
+# -e : script will will exit at the first error
+# -E : ensures that ERR traps get inherited by functions, command substitutions, and subshell environments
+# -u : treats unset variables as errors
+# -o pipefail : normally bash pipelines only return the exit code of the last command. This option will propagate intermediate errors
+
+# *****************************************************************************
+# INCLUDE
+
+source bash-common # include common bash library
+
+# *****************************************************************************
+# FLAGS
+
+FLAG_DEBUG=0 # debug mode on
+FLAG_VERBOSE=false # verbose mode off (default value)
+FLAG_DOWN=false # down mode off (default value)
+
+# *****************************************************************************
+# GLOBAL VARIABLES
+
+DOTSYNCS=".sync."
+DOTSYNC="$DOTSYNCS$HOSTNAME"
+SYNCED=".synced"
+MOUNT_DRIVE=""
+BASENAME=`basename $0`
+
+echo "SYNC_PATH = $SYNC_PATH"
+
+# *****************************************************************************
+# TRAP
+
+trap \
+    "{ echowarn \"$BASENAME has received SIGTERM => exit 255\" ; exit 255; }" \
+    SIGTERM
+
+trap \
+    "{ echoerr \"$BASENAME has received ERR => exit 1\" ; notify_err; exit 1; }" \
+    ERR
+
+# Clean up if user hits control-c
+cleanup() {
+    echo "Aborted..."
+    return $?
+}
+
+# run if user hits control-c
+control_c() {
+    echoerr "$BASENAME has received SIGINT => cleanup and exit $?"
+    cleanup
+    exit $?
+}
+
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+
+# *****************************************************************************
+# FUNCTIONS
+
+display_usage() { 
+    echo -e "$BASENAME synchronizes directories or files from the a local directory to the cloud\n"
+    echo -e "Usage: $BASENAME [OPTIONS] DIRS...\n"
+    echo "DIRS"
+    echo "  Directories or files to synchronize into the cloud."
+    echo "  They must be a sub-directory of a base directory."
+    echo "  A base directory is a directory containing a configuration file like $DOTSYNC"
+    echo "  The configuration contains the name of the cloud base directory"
+    echo ""
+    echo "Options"
+    echo "  -h --help             Display usage"
+    echo "  -v --verbose          Verbose mode"
+    echo "  -c --conf .sync.xxx   Configuration file (default: $DOTSYNC)"
+    echo "                        This file must be located in the local base directory"
+    echo "                        It contains the name of the cloud base directory"
+    echo "  -m --mount drive      drive to mount (if necessary) before sync"
+    echo "  -d --down             Synchronize from the cloud to local directory (reverse mode instead of the default mode)"
+} 
+
+get_local_base() {
+    [[ $2 ]] || { echoerr "wrong usage in get_local_base"; exit 1; }
+    local found=false
+    local dir="$2"
+    [[ -f "$dir/$DOTSYNC" ]] && found=true
+    while [[ $found == false ]] &&  [[ $dir ]]; do
+	dir=$(echo $dir|sed 's|\(.*\)/.*|\1|')
+	[[ -f "$dir/$DOTSYNC" ]] && found=true
+	# echodebug "dir = $dir"
+    done
+    if [[ $found == true ]]; then
+	eval $1='$dir'
+	return 0 # found
+    else
+	echoerr "$DOTSYNC not found"
+	return 1 # not found
+    fi
+}
+
+# Sync one file or directory from the local path to the cloud path
+sync_dir_or_file() {
+    local local_full=""
+    # Local direcory to synchronize or containing the file to synchronize
+    local local_path=""
+    # Local file to synchronize (empty if not a file)
+    local local_file=""
+    local local_base=""
+    local cloud_path=""
+    local cloud_file=""
+    local cloud_base=""
+    
+    echofunc "$FUNCNAME" "$@"
+    [[ ! ($# == 1) ]] && (echoerr "$FUNCNAME requires 1 argument"; exit 1)
+    
+    # Set local_full (full local path+file to synchronize) + local_path + local_file
+    local_full=$(readlink -f "$1") || local_full="$1"
+    
+    if [[ -d $local_full ]]; then
+	# local_full is a directory
+	local_path="$local_full"
+    else
+	if [[ -f $local_full ]]; then
+	    # local_full is a file
+    	    local_path=$(dirname "$local_full")
+	    local_file=$(basename "$local_full")
+	else
+	    # local_full is a non existing file
+    	    local_path=$(dirname "$local_full")
+	    echodebug "1: $local_path"
+	    local tmp=""
+	    tmp=$(readlink -f "$local_path") || tmp=$local_path
+	    echodebug "2: $tmp"
+	    local_path=$tmp
+	    echodebug "3: $local_path"
+	    local_file=$(basename "$local_full")
+	fi
+    fi
+
+    if [[ $FLAG_VERBOSE == true ]]; then
+	echolog "local_full = $local_full"
+	echolog "local_path = $local_path"
+	echolog "local_file = $local_file"
+    fi
+    
+   # Find local_base
+    # echoerr "get_local_base local_base $local_path"
+    get_local_base local_base "$local_path"
+    if [[ ! ($? == 0) ]]; then
+	# if local base is not found
+	exit 1
+    fi
+    [[ $FLAG_VERBOSE == true ]] && echolog "local_base = $local_base"
+
+    # Read .sync to set cloud_base
+    [[ $FLAG_VERBOSE == true ]] && echolog "reading $local_base/$DOTSYNC"
+    cloud_base eval=$(head -n 1 "$local_base/$DOTSYNC")
+    [[ $FLAG_VERBOSE == true ]] && echolog "cloud_base = $cloud_base"
+    
+    # Error if cloud base doesn't exist
+    if [ -d $cloud_base ]; then
+	# expand filename
+	local tmp=""
+	tmp=$(readlink -f "$cloud_base") || tmp=$cloud_base
+	cloud_base=$tmp
+    else
+	echoerr "$cloud_base doesn't exist"
+	exit 1
+    fi
+    
+    # Set cloud path
+    local sub_path="${local_path/${local_base}/}"
+    # expand filename
+    cloud_path=$(readlink -f "$cloud_base") || cloud_path=$cloud_base
+    cloud_path="$cloud_base$sub_path"
+    cloud_file=$(basename "$local_file")
+    if [[ $FLAG_VERBOSE == true ]]; then
+	echolog "cloud_path = $cloud_path"
+	echolog "cloud_file = $cloud_file"
+    fi
+
+    # Synchronize
+    if [[ $FLAG_DOWN == true ]]; then
+	# Reverse mode (local <= cloud)
+	mkdir -p "$local_path"
+	if [[ $cloud_file ]]; then
+	    echo "$local_path <-- $cloud_path/$cloud_file"
+	    cp -Rv "$cloud_path/$cloud_file" "$local_path" || echowarn "$cloud_path/$cloud_file does not exist"
+	    if [[ ! ($? == 0) ]]; then
+		echoerr "Warning: non existing file $cloud_path/$cloud_file"
+	    fi
+	    echo "Synced "$( date '+%Y-%m-%d-%H:%M:%S' )" ($cloud_file)" >> "$local_path/$SYNCED"
+	else
+	    echo "$local_path <== $cloud_path/"
+	    rsync -avh --size-only --progress --delete --exclude "$DOTSYNCS*" --exclude "$DOTSYNC" --exclude "$SYNCED" "$cloud_path/" "$local_path"
+	    echo "Synced "$( date '+%Y-%m-%d-%H:%M:%S' ) >> "$local_path/$SYNCED"
+	fi
+    else
+	# Normal mode (local => cloud)
+	mkdir -p "$cloud_path"
+	if [[ $local_file ]]; then
+	    echo "$local_path/$local_file --> $cloud_path"
+	    echo "cp $local_path/$local_file" "$cloud_path"
+	    cp -Rv "$local_path/$local_file" "$cloud_path" || echowarn "$local_path/$local_file does not exist"
+	    echo "Synced "$( date '+%Y-%m-%d-%H:%M:%S' )" ($local_file)" >> "$cloud_path/$SYNCED"
+	else
+	    echo "$local_path/ ==> $cloud_path"
+	    rsync -avh --size-only --progress --delete --exclude "$DOTSYNCS*" --exclude "$SYNCED" "$local_path/" "$cloud_path"
+	    echo "Synced "$( date '+%Y-%m-%d-%H:%M:%S' ) >> "$cloud_path/$SYNCED"
+	fi
+    fi
+    return 0
+}
+
+# *****************************************************************************
+# PARSE COMMAND LINE PARAMETERS
+
+echofunc "sync2cloud $@"
+
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+	-h|--help)
+	    display_usage
+	    exit 0
+	    ;;
+	-v|--verbose)
+	    echolog "verbose mode"
+	    FLAG_VERBOSE=true
+	    shift # past argument
+	    ;;
+	-d|--down)
+	    echolog "down (reverse) mode"
+	    FLAG_DOWN=true
+	    shift # past argument
+	    ;;
+	-c|--conf)
+	    if [[ $# -ge 2 ]]; then
+		DOTSYNC="$2"
+		[[ $FLAG_VERBOSE == true ]] && echolog "Configuration file set to $DOTSYNC"
+		shift # past argument
+		shift # past value
+	    else
+		echoerr "missing value for option -c"
+		display_usage
+		exit 1
+	    fi
+	    ;;
+	-m|--mount)
+	    if [[ $# -ge 2 ]]; then
+		MOUNT_DRIVE="$2"
+		shift # past argument
+		shift # past value
+	    else
+		echoerr "missing value for option -m"
+		display_usage
+		exit 1
+	    fi
+	    ;;
+	-*|--*)
+	    echoerr "unknown option $1"
+	    display_usage
+	    exit 1
+	    ;;
+	*)
+	    POSITIONAL_ARGS+=("$1") # save positional arg
+	    shift # past argument
+	    ;;
+    esac
+done
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [[ $FLAG_VERBOSE == true ]]; then
+    i=0
+    for val in "${@}"; do
+	((i+=1))
+	echolog "file/dir #$i is $val"
+    done
+    echolog "configuration file is $DOTSYNC"
+fi
+
+# if less than one arguments supplied, display usage 
+if [  $# -lt 1 ] 
+then 
+    echoerr "missing arguments"
+    display_usage
+    exit 1
+fi 
+
+# *****************************************************************************
+# MAIN
+
+# trap notify_err ERR
+
+# Show flag status
+echodebug "FLAG_DEBUG = $FLAG_DEBUG"
+echodebug "FLAG_VERBOSE = $FLAG_VERBOSE"
+
+if [[ "$MOUNT_DRIVE" ]]; then
+    check_mount "$MOUNT_DRIVE"
+fi
+
+for dir_or_file in "${@}"; do
+    echo2 "*****************************************************************************"
+    sync_dir_or_file "$dir_or_file" || echowarn "sync_dir_or_file has return error"
+done 

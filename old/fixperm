@@ -1,0 +1,189 @@
+#!/bin/bash
+
+# ******************************************************************************
+# This is part of the project "my-scripts"
+# File          : fixperm
+# Author        : tholin/e
+# Id            : 
+# Creation      : 2017-10-29
+# Last Revision : 2017-10-29
+# Description   : Smart chown and chmod for directories (recursive)
+#
+#    Copyright (C) 2017 helloworld (Association Loi 1901)
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# *****************************************************************************
+
+# *****************************************************************************
+# TODO
+
+# *****************************************************************************
+# INCLUDES
+
+# *****************************************************************************
+# CONSTANTS
+
+K_RELEASE="0.01"
+K_YEAR="2017"
+K_AUTHOR="helloworld (Association Loi 1901)"
+#K_REQUIRE_USER="root" # only this user can run this script
+K_REQUIRE_USER="$USER" # any user can run this script
+
+# *****************************************************************************
+# VARIABLES
+
+#Set Script Name variable
+SCRIPT=`basename ${BASH_SOURCE[0]}`
+
+#Initialize variables to default values.
+OPT_CHOWN_USER=`whoami` # default user (chown)
+OPT_CHOWN_GROUP='sudo' # default group (chown)
+OPT_CHMOD_DIRS='755' # default perm for directories (chmod)
+OPT_CHMOD_FILES='644' # default perm for files (chmod)
+
+#Set fonts for Help.
+NORM=`tput sgr0`
+BOLD=`tput bold`
+REV=`tput smso`
+
+# *****************************************************************************
+# SUB-ROUTINES
+
+#Help function
+function HELP {
+  echo -e \\n"Help documentation for ${BOLD}${SCRIPT}${NORM} (v$K_RELEASE)"\\n
+  echo -e "${REV}Description:${NORM} Smart chown and chmod for directories (recursive)"
+  echo -e "${REV}Basic usage:${NORM} ${BOLD}$SCRIPT [-u user] [-g group] [-d perm-dirs] [-f perm-files] directories${NORM}"\\n
+  echo -e "Command line switches are optional. The following switches are recognized."
+  echo -e "${REV}-u${NORM}  --Sets new user (chown). Default is ${BOLD}$OPT_CHOWN_USER${NORM}."
+  echo -e "${REV}-g${NORM}  --Sets new group (chown). Default is ${BOLD}$OPT_CHOWN_GROUP${NORM}."
+  echo -e "${REV}-d${NORM}  --Sets new perm for directories (chmod). Default is ${BOLD}$OPT_CHMOD_DIRS${NORM}."
+  echo -e "${REV}-f${NORM}  --Sets new perm for files (chmod). Default is ${BOLD}$OPT_CHMOD_FILES${NORM}."
+  echo -e "${REV}-h${NORM}  --Displays this help message. No further functions are performed."\\n
+  echo -e "Example: ${BOLD}$SCRIPT -u root -g sudo -d 750 -f 640 .${NORM}"\\n
+  echo -e "${BOLD}License:${NORM}"
+  echo -e "  Copyright (C) $K_YEAR $K_AUTHOR. This program comes"
+  echo -e "  with ABSOLUTELY NO WARRANTY This program is free software: you can"
+  echo -e "  redistribute it and/or modify it under the terms of the GNU General"
+  echo -e "  Public License as published by the Free Software Foundation, either"
+  echo -e "  version 3 of the License, or any later version."
+
+  exit 1
+}
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# *****************************************************************************
+# PARSE COMMAND LINE PARAMETERS
+
+#Check the number of arguments. If none are passed, print help and exit.
+NUMARGS=$#
+# echo -e \\n"Number of arguments: $NUMARGS"
+if [ $NUMARGS -eq 0 ]; then
+  HELP
+fi
+
+### Start getopts code ###
+
+#Parse command line flags
+#If an option should be followed by an argument, it should be followed by a ":".
+#Notice there is no ":" after "h". The leading ":" suppresses error messages from
+#getopts. This is required to get my unrecognized option code to work.
+
+while getopts :u:g:d:f:h FLAG; do
+  case $FLAG in
+    u)  #set option "u"
+      OPT_CHOWN_USER=$OPTARG
+      echo "-$FLAG used : chown user set to $OPT_CHOWN_USER"
+      ;;
+    g)  #set option "g"
+      OPT_CHOWN_GROUP=$OPTARG
+      echo "-$FLAG used : chown group set to $OPT_CHOWN_GROUP"
+      ;;
+    d)  #set option "d"
+      OPT_CHMOD_DIRS=$OPTARG
+      echo "-$FLAG used : chmod set (for directories) to $OPT_CHMOD_DIRS"
+      ;;
+    f)  #set option "f"
+      OPT_CHMOD_FILES=$OPTARG
+      echo "-$FLAG used : chmod set (for files) to $OPT_CHMOD_FILES"
+      ;;
+    h)  #show help
+      HELP
+      ;;
+    \?) #unrecognized option - show help
+      echo -e \\n"Option -${BOLD}$OPTARG${NORM} not allowed."
+      HELP
+      #If you just want to display a simple error message instead of the full
+      #help, remove the 2 lines above and uncomment the 2 lines below.
+      #echo -e "Use ${BOLD}$SCRIPT -h${NORM} to see the help documentation."\\n
+      #exit 2
+      ;;
+  esac
+done
+
+shift $((OPTIND-1))  #This tells getopts to move on to the next argument.
+
+### End getopts code ###
+
+# *****************************************************************************
+# MAIN-ROUTINE
+
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+# check if user is allowed to run this
+if [[ $USER != $K_REQUIRE_USER ]]; then 
+		echo "Error: you must be user $K_REQUIRE_USER to run this script !"
+		exit 1
+	fi 
+
+### Main loop to process directories ###
+
+while [ $# -ne 0 ]; do
+    FILE=$1
+    echo "<$FILE>"
+    if [ -d "$FILE" ]
+    then
+	echo "<Directory : $FILE>"
+	echo "  chown -Rv $OPT_CHOWN_USER:$OPT_CHOWN_GROUP"
+	sudo chown -Rvc $OPT_CHOWN_USER:$OPT_CHOWN_GROUP "$FILE"
+	echo "  chmod $OPT_CHMOD_DIRS (directories) :"
+	sudo find "$FILE" -type d -exec chmod -c $OPT_CHMOD_DIRS {} \;
+	echo "  chmod $OPT_CHMOD_FILES (files) :"
+	sudo find "$FILE" -type f -exec chmod -c $OPT_CHMOD_FILES {} \;
+    else
+	echo "Warning : $FILE is not a directory"
+    fi
+  shift  #Move on to next input file.
+done
+
+### End main loop ###
+
+exit 0
+

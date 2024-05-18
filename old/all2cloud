@@ -1,0 +1,250 @@
+#!/bin/bash
+# -----------------------------------------------------------------------------
+# Host          : eukarya
+# File          : sync2cloud
+# Author        : ALX
+# Creation      : 2022-01-19
+# Last Revision : 2022-03-12
+# Description   : synchronizes directories or files from the a local directory to the cloud
+# Release       : 1.06
+# *****************************************************************************
+
+# TODO
+# - icones synchr sur msijoseph et lazare
+# - expliquer synchro à joseph
+
+# RELEASES :
+# - 1.01 : bug fix with -d option
+# - 1.02 : msijoseph and lazare
+# - 1.03 : sync /etc/hosts, /etc/fstab, ~/.bashrc and ~/.bash_aliases
+# - 1.04 : scarabaeidae
+# - 1.05 : adding ~/dev for je, adding ~/domoticz and ~/INSTALL for scarabaeidae
+# - 1.06 : cryptococcus
+#
+# BUGS :
+# - quand /media/alx-home n'est pas monté
+#
+# FEATURES
+# - Icones sur msijoseph et lazare
+# - Backup + script général des backups
+
+#set -x # bash debugger
+set -Eeuo pipefail
+# -e : script will will exit at the first error
+# -E : ensures that ERR traps get inherited by functions, command substitutions, and subshell environments
+# -u : treats unset variables as errors
+# -o pipefail : normally bash pipelines only return the exit code of the last command. This option will propagate intermediate errors
+
+# *****************************************************************************
+# INCLUDE
+
+source bash-common # include common bash library
+
+# *****************************************************************************
+# FLAGS
+
+FLAG_DEBUG=0 # debug mode off
+FLAG_VERBOSE=false # verbose mode off (default value)
+FLAG_DOWN=false # down mode off (default value)
+
+# *****************************************************************************
+# GLOBAL VARIABLES
+
+MOUNTS=( "/mnt/broadcast" "/mnt/software.s" )
+OPTS="" # options ("-v" for verbose)
+CONFIG="/mnt/broadcast/config"
+OS="linux"
+PLATFORM="debian"
+
+# *****************************************************************************
+# FUNCTIONS
+
+warn() {
+    echowarn "sync2cloud has return error"
+}
+
+# *****************************************************************************
+# PARSE COMMAND LINE PARAMETERS
+
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case $1 in
+	-h|--help)
+	    display_usage
+	    exit 0
+	    ;;
+	-v|--verbose)
+	    echolog "verbose mode"
+	    FLAG_VERBOSE=true
+	    shift # past argument
+	    ;;
+	-d|--down)
+	    echolog "down (reverse) mode"
+	    FLAG_DOWN=true
+	    shift # past argument
+	    ;;
+	-*|--*)
+	    echoerr "unknown option $1"
+	    display_usage
+	    exit 1
+	    ;;
+	*)
+	    POSITIONAL_ARGS+=("$1") # save positional arg
+	    shift # past argument
+	    ;;
+    esac
+done
+set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
+
+if [[ $FLAG_VERBOSE == true ]]; then
+    i=0
+    for val in "${@}"; do
+	((i+=1))
+	echolog "file/dir #$i is $val"
+    done
+fi
+
+# if less than one arguments supplied, display usage 
+if [  $# -lt 0 ] 
+then 
+    echoerr "missing arguments"
+    display_usage
+    exit 1
+fi 
+
+# *****************************************************************************
+# MAIN
+
+# trap notify_err ERR
+
+sudo_ask
+
+# Show flag status
+echodebug "FLAG_DEBUG = $FLAG_DEBUG"
+echodebug "FLAG_VERBOSE = $FLAG_VERBOSE"
+echodebug "FLAG_DOWN = $FLAG_DOWN"
+
+check_mount "${MOUNTS[@]}"
+
+if [[ $FLAG_VERBOSE == true ]]; then
+    OPTS="$OPTS -v"
+fi
+
+if [[ $FLAG_DOWN == true ]]; then
+    OPTS="$OPTS -d"
+fi
+
+echolog "hostname is $HOSTNAME"
+if [[ $FLAG_DOWN == true ]]; then
+    echolog "Sync DOWN"
+else
+    echolog "Sync UP"
+fi
+
+# UP => fstab backup to config
+if [[ $FLAG_DOWN == false ]]; then
+    sudo cp /etc/fstab /etc/fstab.$HOSTNAME
+    sudo cp /etc/fstab.$HOSTNAME $CONFIG/$OS/$PLATFORM/
+fi
+    
+# DOWN => fstab and hosts backups to /etc
+if [[ $FLAG_DOWN == true ]]; then
+    sudo cp $CONFIG/$OS/fstab.* /etc/
+    sudo cp $CONFIG/$OS/hosts.* /etc/
+    cp $CONFIG/$OS/.bashrc ~/
+    cp $CONFIG/$OS/.bash_aliases ~/
+fi
+
+# Attention le signe ~ ne doit jamais être dans des guillemets
+case "$HOSTNAME" in
+    'sarbecovirus')
+	PLATFORM="debian"
+	# UP => hosts backup to config
+	if [[ $FLAG_DOWN == false ]]; then
+	    sudo cp /etc/hosts /etc/hosts.$HOSTNAME
+	    sudo cp /etc/hosts.$HOSTNAME $CONFIG/$OS/
+	    # .bashrc and .bash_aliases to config
+	    cp /home/alexandra/.bashrc $CONFIG/$OS/
+	    cp /home/alexandra/.bash_aliases $CONFIG/$OS/
+	fi
+	sudo sync2cloud $OPTS /usr/local/bin || warn
+	sync2cloud $OPTS ~/Bureau || warn
+	sync2cloud $OPTS ~/Images/alexandra ~/Images/common || warn
+	sync2cloud $OPTS ~/Documents/alexandra ~/Documents/common || warn
+	sync2cloud $OPTS /media/alx-home || warn
+	;;
+    'centroleninae')
+	PLATFORM="debian"
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	fi
+	sync2cloud $OPTS ~/Bureau || warn
+	sync2cloud $OPTS ~/Images/alexandra ~/Images/common || warn
+	sync2cloud $OPTS ~/Documents/alexandra ~/Documents/common || warn
+	sync2cloud $OPTS /media/alx-centroleninae || warn
+	;;
+    'cryptococcus')
+	PLATFORM="debian"
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	fi
+	sync2cloud $OPTS ~/Bureau || warn
+	sync2cloud $OPTS ~/Images/alexandra ~/Images/common || warn
+	sync2cloud $OPTS ~/Documents/alexandra ~/Documents/common || warn
+	sync2cloud $OPTS /media/alx-cryptococcus || warn
+	;;
+    'diptera')
+	PLATFORM="debian"
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	fi
+	sync2cloud $OPTS ~/Images/common || warn
+	sync2cloud $OPTS ~/Documents/common || warn
+	;;
+    'msijoseph')
+	PLATFORM="debian"
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	    sync2cloud $OPTS ~/Documents/common || warn
+            sync2cloud $OPTS ~/Images/common || warn
+	fi
+	if [[ $FLAG_DOWN == false ]]; then
+	    sync2cloud $OPTS ~/Téléchargements || warn
+	fi
+	sync2cloud $OPTS ~/Bureau || warn
+        sync2cloud $OPTS ~/Images/je || warn
+	sync2cloud $OPTS ~/Documents/je || warn
+	sync2cloud $OPTS ~/dev || warn
+	;;
+    'lazare')
+	PLATFORM="debian"
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	    sync2cloud $OPTS ~/Documents/common || warn
+            sync2cloud $OPTS ~/Images/common || warn
+	    sync2cloud $OPTS ~/Téléchargements || warn
+	fi
+	sync2cloud $OPTS ~/Bureau || warn
+        sync2cloud $OPTS ~/Images/je || warn
+	sync2cloud $OPTS ~/Documents/je || warn
+	sync2cloud $OPTS ~/dev || warn
+	;;
+    'scarabaeidae')
+	PLATFORM="raspbian"
+	if [[ $FLAG_DOWN == false ]]; then
+	    cp ~/domoticz/domoticz.db $CONFIG/$OS/$PLATFORM/domoticz
+	    sync2cloud $OPTS ~/domoticz || warn
+	fi
+	if [[ $FLAG_DOWN == true ]]; then
+	    sudo sync2cloud $OPTS /usr/local/bin || warn
+	fi
+	sync2cloud $OPTS ~/INSTALL || warn
+	sync2cloud $OPTS ~/scripts || warn
+	;;
+    *)
+	echoerr "unknown computer $HOSTNAME"
+	exit 1
+	;;
+esac
+
+exit 0

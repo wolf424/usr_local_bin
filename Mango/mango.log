@@ -1,0 +1,18 @@
+INFO 07 janv. 2022 16:53:42 AWT-EventQueue-0 Mango: 4.1-b1531 (64-bit) [Vanilla]
+INFO 07 janv. 2022 16:53:42 AWT-EventQueue-0 Java: 1.7.0_80 (64-bit) Oracle Corporation [/mnt/nfs/home/_incoming/Mango/jre7]
+INFO 07 janv. 2022 16:53:42 AWT-EventQueue-0 OS: LINUX 4.19.0-17-AMD64
+INFO 07 janv. 2022 16:53:42 AWT-EventQueue-0 Platform: x86_64 unknown
+INFO 07 janv. 2022 16:53:42 AWT-EventQueue-0 
+WARN 07 janv. 2022 16:54:32 OrthogonalViewer.loadImage() Thread edu.uthscsa.ric.utilities.FileUtilities.writeTest(FileUtilities.java:589)
+java.io.IOException: Permission non accordée
+	at java.io.UnixFileSystem.createFileExclusively(Native Method)
+	at java.io.File.createNewFile(Unknown Source)
+	at edu.uthscsa.ric.utilities.FileUtilities.writeTest(FileUtilities.java:589)
+	at edu.uthscsa.ric.mango.viewerslice.SliceViewer.makeFile(SliceViewer.java:13503)
+	at edu.uthscsa.ric.mango.viewerslice.SliceViewer.makeFile(SliceViewer.java:13489)
+	at edu.uthscsa.ric.mango.viewerslice.SliceViewer.makeROIGZIPFile(SliceViewer.java:13555)
+	at edu.uthscsa.ric.mango.viewerslice.SliceViewer.doLoadImage(SliceViewer.java:1898)
+	at edu.uthscsa.ric.mango.viewerslice.SliceViewer$8.run(SliceViewer.java:5308)
+	at java.lang.Thread.run(Unknown Source)
+INFO 07 janv. 2022 16:54:35 AWT-EventQueue-0 Image [ABDOMINO PELVIENAbdoPelv Sans IV] loaded
+INFO 07 janv. 2022 16:57:50 AWT-EventQueue-0 Image [ABDOMINO PELVIENAbdoPelv Sans IV] closed

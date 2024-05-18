@@ -1,0 +1,6 @@
+#!/bin/bash
+ln -s "/media/alx-home/Bibliothèque calibre/" /home/alexandra/
+ln -s "/media/alx-home/bookmarks/" /home/alexandra/
+ln -s "/media/alx-home/devel/" /home/alexandra/
+ln -s "/media/alx-home/diy/" /home/alexandra/
+ln -s "/media/usb-sec/.secure" /home/alexandra/

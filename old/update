@@ -1,0 +1,2 @@
+#!/bin/bash
+youtube-dl --extract-audio --audio-format mp3 'https://www.youtube.com/playlist?list=PLdyk7EYQBBD6ug-adecPJZL1v9vd2YFRo'

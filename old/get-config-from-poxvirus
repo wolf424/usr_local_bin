@@ -1,0 +1,25 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : get-config-from-poxvirus
+# Author        : ALX
+# Creation      : 2017-01-24
+# Last Revision : 2018-02-28
+# Description   : download config files from host poxvirus
+# *****************************************************************************
+
+if [[ $HOSTNAME == "poxvirus" ]]; then 
+		echo "Ce script ne doit pas être lancé sur poxvirus !" 
+		exit 1
+	fi 
+if [[ $USER != "root" ]]; then 
+		echo "Ce script doit être lancé en tant que root !" 
+		exit 1
+	fi 
+
+rcp lambda@poxvirus:/usr/local/bin/* /usr/local/bin
+rcp lambda@poxvirus:/etc/hosts/ /etc/hosts.poxvirus
+rcp lambda@poxvirus:/etc/fstab /etc/fstab.poxvirus
+ 
+# exit shell script with 0 signal
+exit 0

@@ -1,0 +1,85 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : import-config
+# Author        : ALX
+# Creation      : 2019-09-13
+# Last Revision : 2019-09-13
+# Description   : import config from host
+# *****************************************************************************
+
+ME=`basename "$0"` #
+
+LOGFILE=_downloaded
+DATEBEGIN=$(date)
+
+DISTHOST=poxvirus # host to import config from
+DISTUSER=alexandra # user to connect DISTHOST
+PERM="root" # user needed to run this script
+
+if [[ $USER != $PERM ]]; then
+		echo "Ce script doit être lancé en tant que $PERM !" 
+		exit 1
+	fi 
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+
+
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+import-dir()
+{
+    SOURCE=$1
+    DEST=$2
+    USER=$3
+    echo "Importing $DEST from $SOURCE"
+    if [ -d "$DEST" ]; then
+	### Take action if $DEST exists ##
+	echo "$DEST exists"
+    else
+	###  Control will jump here if $DIR does NOT exists ###
+	echo "$DEST doesn't exist"
+	mkdir $DEST
+	if [ "$USER" != "root" ]; then
+	    sudo chown -v $USER $DEST
+	fi
+    fi
+    echo $ME > $DEST/$LOGFILE
+    echo "Source : " $SOURCE    >> $DEST/$LOGFILE
+    echo "Dest   : " $DEST      >> $DEST/$LOGFILE
+    echo "Begin  : " $DATEBEGIN >> $DEST/$LOGFILE
+    rcp $SOURCE:$DEST/* $DEST
+    if [ "$USER" != "root" ]; then
+	sudo chown -v $USER $DEST/*
+    fi
+    DATEEND=$(date)
+    echo "End    : " $DATEEND   >> $DEST/$LOGFILE
+}
+
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+echo "Importing /etc/hosts.$DISTHOST"
+rcp $DISTUSER@$DISTHOST:/etc/hosts "/etc/hosts.$DISTHOST"
+
+echo "Importing ~/.bash_aliases"
+rcp $DISTUSER@$DISTHOST:/home/alexandra/.bash_aliases /home/alexandra
+chown alexandra /home/alexandra/.bash_aliases
+
+import-dir "$DISTUSER@$DISTHOST" "/home/alexandra/.fonts" "alexandra"
+import-dir "$DISTUSER@$DISTHOST" "/usr/local/bin" "root"
+
+# exit shell script with 0 signal
+exit 0
+

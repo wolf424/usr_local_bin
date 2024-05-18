@@ -1,0 +1,298 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : sarbecovirus
+# File          : music2bestof
+# Author        : ALX
+# Creation      : 2020-08-24
+# Last Revision : 2023-09-17
+# Description   : Import music from /mnt/music.s/jukebox
+# *****************************************************************************
+
+# ------------------------------------------------------------------------------
+# CONSTANTS
+
+USER_REQUESTED="root"
+#SOURCE="/mnt/music.s/jukebox/"
+SOURCE="${1}"
+DEST="/mnt/music.s/bestof/"
+FNAME_LOG="_IMPORTMUSIC"
+# MODE="clean"
+
+# ------------------------------------------------------------------------------
+# VARIABLES
+
+if [ "${MODE}" == "clean" ]; then
+    SOURCE="${DEST}"
+fi
+
+DESTALB="${DEST}/albums"
+DESTCLA="${DEST}/classique"
+DESTTIT="${DEST}/titres"
+DESTTXT="${DEST}/audiotext"
+DESTTEC="${DEST}/elec"
+
+# ------------------------------------------------------------------------------
+# INIT
+
+THIS_SCRIPT=`basename "$0"`
+echo ${THIS_SCRIPT}
+mount "/mnt/music.s"
+count=0
+
+# ------------------------------------------------------------------------------
+# CONTROLS
+
+if [[ "${USER}" != "${USER_REQUESTED}" ]]; then 
+    echo "ERROR : you are not ${USER_REQUESTED} !" 
+    exit 1
+fi
+
+if [[ ! -d "${SOURCE}" ]]; then
+    echo "ERROR : ${SOURCE} doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d "${DEST}" ]]; then
+    echo "ERROR : ${DEST} doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d "${DESTALB}" ]]; then
+    echo "mkdir -p ${DESTALB}"
+    mkdir -p "$DESTALB"
+    sudo chown alexandra:alexandra "$DESTALB"
+fi
+
+if [[ ! -d "${DESTALB}" ]]; then
+    echo "mkdir -p ${DESTALB}"
+    mkdir -p "$DESTALB"
+    sudo chown alexandra:alexandra "$DESTALB"
+fi
+
+if [[ ! -d "${DESTCLA}" ]]; then
+    echo "mkdir -p ${DESTCLA}"
+    mkdir -p "$DESTCLA"
+    sudo chown alexandra:alexandra "$DESTCLA"
+fi
+
+if [[ ! -d "${DESTTIT}" ]]; then
+    echo "mkdir -p ${DESTTIT}"
+    mkdir -p "$DESTTIT"
+    sudo chown alexandra:alexandra "$DESTTIT"
+fi
+
+if [[ ! -d "${DESTTXT}" ]]; then
+    echo "mkdir -p ${DESTTXT}"
+    mkdir -p "$DESTTXT"
+    sudo chown alexandra:alexandra "$DESTTXT"
+fi
+
+if [[ ! -d "${DESTTEC}" ]]; then
+    echo "mkdir -p ${DESTTEC}"
+    mkdir -p "$DESTTEC"
+    sudo chown alexandra:alexandra "$DESTTEC"
+fi
+
+# ------------------------------------------------------------------------------
+# WRITE LOG
+
+LOG="${DEST}/${FNAME_LOG}"
+echo "pdf files are imported from ${SOURCE}" >  "${LOG}"
+echo "Use command $0 to update"              >> "${LOG}"
+echo "Source: ${SOURCE}"                     >> "${LOG}"
+echo "Dest: ${DEST}"                         >> "${LOG}"
+
+# ------------------------------------------------------------------------------
+# FUNCTIONS
+
+cleanup() # clean up if user hits control-c
+{
+    echo "Aborted..."
+    return $?
+}
+
+control_c() # run if user hits control-c
+{
+    echo -en "\n*** Ouch! Exiting ***\n"
+    cleanup
+    exit $?
+}
+
+clean-tag()
+{
+    cleanedtag="${1}"
+    cleanedtag="${cleanedtag//'?'}" # remove ?
+    cleanedtag="${cleanedtag//':'}" # remove :
+    return "${cleanedtag}"
+}
+
+# loop & print a folder recusively,
+print_folder_recurse() {
+    for i in "$1"/*; do
+	count=$((count+1))
+	if [ $((count%10)) -eq 0 ]; then
+	   echo "${count}"
+	   # echo "${count}: $1"
+	fi
+	DIRNAME=$(dirname "${i}")
+	BASENAME=$(basename "${i}")
+	pattern="++"
+        if [ -d "$i" ]; then
+	    # if directory
+	    case "$i" in
+		*"/++"*)
+		    # tagged directory
+		    if [ "${MODE}" == "clean" ]; then
+			# clean mode
+			echo "Removing dir: ${i}"
+			rm -rf "${i}"
+		    else
+			# normal mode
+			BASENAME=${BASENAME/#"++"/}
+			if [[ "${i}" =~ .*"/classique/"* ]]; then
+			    echo "Found classique: ${i}"
+			    echo "To: ${DESTCLA}/${BASENAME}"
+			    rsync -avh --size-only --progress --delete "${i}"/* "${DESTCLA}/${BASENAME}/"
+			    chown -R alexandra:alexandra "${DESTCLA}/${BASENAME}"
+			else
+			    if [[ "${i}" =~ .*"/elec-goa/"* ]] || [[ "${i}" =~ .*"/elec-techno/"* ]] || [[ "${i}" =~ .*"/elec-trance/"* ]]; then
+			    # elec directory
+				echo "Found elec: ${i}"
+				echo "To: ${DESTTEC}/${BASENAME}"
+				rsync -avh --size-only --progress --delete "${i}"/* "${DESTTEC}/${BASENAME}/"
+				chown -R alexandra:alexandra "${DESTTEC}/${BASENAME}"
+			    else
+				# audiotext directory
+				if [[ "${i}" =~ .*"/audiotext/"* ]]; then
+				    echo "Found audio text: ${i}"
+				    echo "To: ${DESTTXT}/${BASENAME}"
+				    rsync -avh --size-only --progress --delete "${i}"/* "${DESTTXT}/${BASENAME}/"
+				    chown -R alexandra:alexandra "${DESTTXT}/${BASENAME}"
+				else
+				    # album directory
+				    echo "Found album: ${i}"
+				    echo "To: ${DESTALB}/${BASENAME}"
+				    rsync -avh --size-only --progress --delete "${i}"/* "${DESTALB}/${BASENAME}/"
+				    chown -R alexandra:alexandra "${DESTALB}/${BASENAME}"
+				fi
+			    fi
+			fi
+		    fi
+			;;
+			*)
+			    print_folder_recurse "$i"
+		    ;;
+	    esac
+	elif [ -f "$i" ]; then
+	    case "$i" in
+		# if .flac file
+		*".flac")
+		    echo "ignoring flac: $i"
+		    # A COMPLETER
+		    ;;
+		*".mp3")
+		    # if .mp3 file
+		    tag=$(eyeD3 --no-color --log-level=error "$i")
+		    if [[ "$tag" =~ .*"[autoradio"* ]] || [[ "$tag" =~ .*"[Autoradio"* ]] || [[ "$tag" =~ "\$\$\$\$" ]]; then
+			# tagged .mp3
+
+			# Read tags
+			genre="Unknown"
+			artist="Unknown"
+			composer="Unknown"
+			album="Unknown"
+			title="Unknown"
+			while read line; do
+			    if [[ "$line" =~ .*"genre: " ]]; then
+				# remove every character before "genre: "
+				genre=${line/*genre: /}
+				# extract first substring (before first space)
+				genre="$(echo $genre|awk '{print $1}')"
+			    fi;
+			    
+			    if [[ "$line" =~ .*artist:[[:space:]]*(.*) ]]; then
+				artist="${BASH_REMATCH[1]}"
+				artist="${artist//'?'}" # remove ?
+				artist="${artist//':'}" # remove :
+				artist="${artist//'/'}" # remove /
+			    fi;
+			    if [[ "$line" =~ .*composer:[[:space:]]*(.*) ]]; then
+				composer="${BASH_REMATCH[1]}"
+				composer="${composer//'?'}" # remove ?
+				composer="${composer//':'}" # remove :
+				composer="${composer//'/'}" # remove /
+			    fi;
+			    if [[ "$line" =~ .*album:[[:space:]]*(.*) ]]; then
+				album="${BASH_REMATCH[1]}"
+				album="${album//'?'}" # remove ?
+				album="${album//':'}" # remove :
+				album="${album//'/'}" # remove /
+
+			    fi;
+			    if [[ "$line" =~ .*title:[[:space:]]*(.*) ]]; then
+				title="${BASH_REMATCH[1]}"
+				title="${title//'?'}" # remove ?
+				title="${title//':'}" # remove :
+				title="${title//'/'}" # remove /
+			    fi;
+			done <<< "$tag"
+
+			# Copy to the directory depending on genre with a new name of file based on mp3 tags
+			if [ "${MODE}" == "clean" ]; then
+			    # clean mode
+			    echo "Removing file: ${i}"
+			    rm "${i}"
+			else
+			    # normal mode
+			    case "${genre}" in
+				"classique")
+				    # Genre classique => To "classique"
+				    echo "${genre}: ${composer} - ${album} - ${title}"
+				    mkdir -p "${DESTCLA}/${composer}"
+				    cp "${i}" "${DESTCLA}/${composer}/${album} - ${title}.mp3"
+				    chown alexandra:alexandra "${DESTCLA}/${composer}/${album} - ${title}.mp3"
+				    ;;
+				"audiotext")
+				    # Genre audiotext => To "audiotext"
+				    echo "${genre}: ${artist} - ${composer} - ${title}"
+				    mkdir -p "${DESTTXT}/${album}"
+				    cp "${i}" "${DESTTXT}/${album} - ${title}.mp3"
+				    chown alexandra:alexandra "${DEST}/${genre}/${album} - ${title}.mp3"
+				    ;;
+				*)
+				    # Other genres => To "titres"
+				    echo "${genre}: ${artist} - ${composer} - ${title}"
+				    mkdir -p "${DESTTIT}/${genre}"
+				    chown alexandra:alexandra "${DESTTIT}/${genre}"
+				    cp "${i}" "${DESTTIT}/${genre}/${artist} - ${title}.mp3"
+				    chown alexandra:alexandra "${DESTTIT}/${genre}/${artist} - ${title}.mp3"
+				    ;;
+			    esac
+			fi
+		    fi
+		    ;;
+		*)
+		    ;;
+	    esac
+        fi
+    done
+}
+
+echo "Importing :"
+#find "$SOURCE" -name "*.mp3" | while read file; do import_file "$file"; done
+print_folder_recurse "$SOURCE"
+echo "Changing permissions"
+sudo chown -R alexandra:alexandra "${DEST}"
+
+# ------------------------------------------------------------------------------
+# CLOSE MIRRORS_LOG
+
+DATEEND=$(date)
+echo "Last update:" $(date) >> ${LOG}
+echo "Done. Logged in: ${LOG}"
+
+# ------------------------------------------------------------------------------
+# EXIT
+
+# exit shell script with 0 signal
+exit 0

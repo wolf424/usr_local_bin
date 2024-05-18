@@ -1,0 +1,13 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : autoradio-clean@eaDir
+# Author        : ALX
+# Creation      : 2017-05-08
+# Last Revision : 2017-05-08
+# Description   : clean directories from this point from @eaDir
+# *****************************************************************************
+
+#!/bin/bash
+
+find . -type d -path *@eaDir -exec rm -rvf '{}' \;

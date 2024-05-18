@@ -1,0 +1,19 @@
+#!/bin/bash
+
+copyifchecked()
+{
+    filename=$1
+    pwd
+    echo "\"$filename\""
+    cmd="mediainfo Mike G - The Cosmic Floyd.mp3 > toto"
+    echo $cmd
+    eval $cmd
+    cat toto
+    if [[ $string =~ .*BDSM.* ]]
+    then
+	echo "It's there!"
+    fi
+}
+
+cd "/mnt/music.s/jukebox/elec-ambient/++Mike G - The Cosmic Floyd"
+copyifchecked "Mike G - The Cosmic Floyd.mp3"

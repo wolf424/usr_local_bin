@@ -1,0 +1,25 @@
+#!/bin/bash
+BASE=`basename "$1"`
+LOCAL=`resolve_relative_path "$1"`
+REPO=`realpath "$1"`
+LOCAL_DIR=`dirname "$LOCAL"`
+REPO_DIR=`dirname "$REPO"`
+URL_LOCAL=`url_encode "$LOCAL"`
+URL_REPO=`url_encode "$REPO"`
+URL_LOCAL_DIR=`url_encode "$LOCAL_DIR"`
+URL_REPO_DIR=`url_encode "$REPO_DIR"`
+
+OUTPUT="- $BASE
+  - local : file://$URL_LOCAL
+  - local dir : file://$URL_LOCAL_DIR
+  - repo : file://$URL_REPO
+  - repo dir : file://$URL_REPO_DIR"
+
+echo "$OUTPUT"
+echo "$OUTPUT" | xclip -selection clipboard
+
+# echo "- $BASE"
+# echo "  - local : file://$URL_LOCAL"
+# echo "  - local dir : file://$URL_LOCAL_DIR"
+# echo "  - repo : file://$URL_REPO"
+# echo "  - repo dir : file://$URL_REPO_DIR"

@@ -1,0 +1,205 @@
+#!/bin/bash
+# *****************************************************************************
+# Host          : poxvirus
+# File          : pelecanus-cleanup
+# Author        : ALX
+# Creation      : 2018-03-04
+# Last Revision : 2018-03-04
+# Description   : nettoyage dans pelecanus
+#                 - Scanne toute l'arborescence photos.s
+#                 - Selon les types de fichier
+#                 - Déplace les vidéos égarées vers videos.s
+# *****************************************************************************
+
+#Finir par / (c'est important)
+# Ne pas finir par /
+SOURCEDIR="/media/hdd-pelecanus/photos.s"
+DESTDIR="/media/hdd-pelecanus/videos.s"
+PERM="root"
+
+if [[ $USER != $PERM ]]; then 
+		echo "Ce script doit être lancé en tant que $PERM !" 
+		exit 1
+	fi 
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+ 
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+function moveVideoFile2()
+{
+    # Create if needed destination directory for this file
+    if [ -d "$DESTDIR/$1" ]
+    then
+	echo "exist: $DESTDIR/$1"
+    else
+	echo "mkdir: $DESTDIR/$1"
+	mkdir "$DESTDIR/$1"
+    fi
+}
+
+function analyseFile()
+{
+    curFile="$1"
+    curPwd="$PWD"
+    if [ "$curPwd" == "$SOURCEDIR" ]; then
+	shortPwd='.'
+    else
+	shortPwd="${curPwd/$SOURCEDIR\/}"
+    fi 
+    basePwd="${shortPwd%%\/*}"
+
+    # ROUTINE UTILISATEUR : DEBUT *********************************************
+
+    # Identifier le type de fichier
+    fileType="unknown"
+    if [[ $curFile = *".gif"* ]] || [[ $curFile = *".GIF"* ]] \
+	   || [[ $curFile = *".jpeg"* ]] || [[ $curFile = *".JPEG"* ]] \
+	   || [[ $curFile = *".jpg"* ]] || [[ $curFile = *".JPG"* ]] \
+	   || [[ $curFile = *".nef"* ]] || [[ $curFile = *".NEF"* ]] \
+	   || [[ $curFile = *".png"* ]] || [[ $curFile = *".PNG"* ]] \
+	   || [[ $curFile = *".pcx"* ]] || [[ $curFile = *".PCX"* ]] \
+	   || [[ $curFile = *".psd"* ]] || [[ $curFile = *".PSD"* ]] \
+	   || [[ $curFile = *".psp"* ]] || [[ $curFile = *".PSP"* ]] \
+	   || [[ $curFile = *".tif"* ]] || [[ $curFile = *".TIF"* ]] \
+	   || [[ $curFile = *".xcf"* ]] || [[ $curFile = *".XCF"* ]]
+    then
+	fileType="photo"
+    fi
+    if  [[ $curFile = *".asf"* ]] || [[ $curFile = *".ASF"* ]] \
+	    || [[ $curFile = *".avi"* ]] || [[ $curFile = *".AVI"* ]] \
+	    || [[ $curFile = *".mov"* ]] || [[ $curFile = *".MOV"* ]] \
+	    || [[ $curFile = *".mpg"* ]] || [[ $curFile = *".MPG"* ]] \
+	    || [[ $curFile = *".mpeg"* ]] || [[ $curFile = *".MPEG"* ]] \
+	    || [[ $curFile = *".mp4"* ]] || [[ $curFile = *".MP4"* ]] \
+	    || [[ $curFile = *".wmv"* ]] || [[ $curFile = *".WMV"* ]] \
+	    || [[ $curFile = *".3gp"* ]] || [[ $curFile = *".3GP"* ]]
+    then
+	fileType="video"
+    fi
+    if  [[ $curFile = *".wav"* ]] || [[ $curFile = *".WAV"* ]]
+    then
+	fileType="sound"
+    fi
+    if  [[ $curFile = *".arw"* ]] || [[ $curFile = *".ARW"* ]] \
+	    || [[ $curFile = *".btr"* ]] || [[ $curFile = *".BTR"* ]] \
+	    || [[ $curFile = *".class"* ]] || [[ $curFile = *".CLASS"* ]] \
+	    || [[ $curFile = *".cnf"* ]] || [[ $curFile = *".CNF"* ]] \
+	    || [[ $curFile = *".cr2"* ]] || [[ $curFile = *".CR2"* ]] \
+	    || [[ $curFile = *".css"* ]] || [[ $curFile = *".CSS"* ]] \
+	    || [[ $curFile = *".ctl"* ]] || [[ $curFile = *".CTL"* ]] \
+	    || [[ $curFile = *".doc"* ]] || [[ $curFile = *".DOC"* ]] \
+	    || [[ $curFile = *".dsc"* ]] || [[ $curFile = *".DSC"* ]] \
+	    || [[ $curFile = *".exe"* ]] || [[ $curFile = *".EXE"* ]] \
+	    || [[ $curFile = *".exr"* ]] || [[ $curFile = *".EXR"* ]] \
+	    || [[ $curFile = *".htm"* ]] || [[ $curFile = *".HTM"* ]] \
+	    || [[ $curFile = *".html"* ]] || [[ $curFile = *".HTML"* ]] \
+	    || [[ $curFile = *".iaa"* ]] || [[ $curFile = *".IAA"* ]] \
+	    || [[ $curFile = *".ind"* ]] || [[ $curFile = *".IND"* ]] \
+	    || [[ $curFile = *".inf"* ]] || [[ $curFile = *".INF"* ]] \
+	    || [[ $curFile = *".ini"* ]] || [[ $curFile = *".INI"* ]] \
+	    || [[ $curFile = *".ion"* ]] || [[ $curFile = *".ION"* ]] \
+	    || [[ $curFile = *".jbf"* ]] || [[ $curFile = *".JBF"* ]] \
+	    || [[ $curFile = *".js"* ]] || [[ $curFile = *".JS"* ]] \
+	    || [[ $curFile = *".pdf"* ]] || [[ $curFile = *".PDF"* ]] \
+	    || [[ $curFile = *".pod"* ]] || [[ $curFile = *".POD"* ]] \
+	    || [[ $curFile = *".mct"* ]] || [[ $curFile = *".MCT"* ]] \
+	    || [[ $curFile = *".mpO"* ]] || [[ $curFile = *".MPO"* ]] \
+	    || [[ $curFile = *".mts"* ]] || [[ $curFile = *".MTS"* ]] \
+	    || [[ $curFile = *".odt"* ]] || [[ $curFile = *".ODT"* ]] \
+	    || [[ $curFile = *".orf"* ]] || [[ $curFile = *".ORF"* ]] \
+	    || [[ $curFile = *".ppm"* ]] || [[ $curFile = *".PPM"* ]] \
+	    || [[ $curFile = *".pto"* ]] || [[ $curFile = *".PTO"* ]] \
+	    || [[ $curFile = *".sh3d"* ]] || [[ $curFile = *".SH3D"* ]] \
+	    || [[ $curFile = *".thm"* ]] || [[ $curFile = *".THM"* ]] \
+	    || [[ $curFile = *".txt"* ]] || [[ $curFile = *".TXT"* ]] \
+	    || [[ $curFile = *".url"* ]] || [[ $curFile = *".URL"* ]] \
+	    || [[ $curFile = *".webm"* ]] || [[ $curFile = *".WEBM"* ]] \
+	    || [[ $curFile = *".zip"* ]] || [[ $curFile = *".ZIP"* ]]
+    then
+	fileType="ignore"
+    fi
+    
+    # Si le fichier est une vidéo, le déplacer vers le répertoire videos
+    if [ $fileType == "video" ]; then
+	# Créer le répertoire destination si nécessaire
+        if ! [[ -d "$DESTDIR/$basePwd" ]]; then
+	    echo "Create directory $DESTDIR/$basePwd"
+	    mkdir "$DESTDIR/$basePwd"
+	fi
+	echo "  Moving video: $basePwd/$curFile"
+	mv "$curFile" "$DESTDIR/$basePwd"
+    fi
+
+    # Si le fichier est de type inconnu, le signaler à l'écran
+    if [ $fileType == "unknown" ]; then
+	echo "  Unknown type : $basePwd/$curFile"
+    fi
+ 
+    # ROUTINE UTILISATEUR : FIN ***********************************************
+
+    # Revenir où on était pour ne pas se perdre
+    cd "$curPwd"
+}
+
+function analyseDir()
+{
+    curPwd="$PWD"
+    if [ "$curPwd" == "$SOURCEDIR" ]; then
+	shortPwd='.'
+    else
+	shortPwd="${curPwd/$SOURCEDIR\/}"
+    fi 
+    basePwd="${shortPwd%%\/*}"
+
+    # ROUTINE UTILISATEUR : DEBUT *********************************************
+
+    # echo "curPwd   = $curPwd"
+    # echo "shortPwd = $shortPwd"
+    # echo "basePwd  = $basePwd"
+
+    # ROUTINE UTILISATEUR : FIN ***********************************************
+
+    # Revenir où on était pour ne pas se perdre
+    cd "$curPwd"
+}
+
+# Explorer récursivement le répertoire $1 pour :
+# - lancer analyseDir sur chaque répertoire
+# - lancer analyseFile sur chaque fichier
+function RecurseDirs
+{
+    oldIFS=$IFS
+    IFS=$'\n'
+    for f in "$@"
+    do
+        if [[ -d "${f}" ]]; then
+            cd "${f}"
+	    analyseDir $f
+            RecurseDirs $(ls -1 ".")
+            cd ..
+	else
+	    analyseFile $f
+        fi
+    done
+    IFS=$oldIFS
+}
+
+RecurseDirs "$SOURCEDIR"
+
+# exit shell script with 0 signal
+exit 0

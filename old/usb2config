@@ -1,0 +1,217 @@
+#!/bin/bash -e
+# *****************************************************************************
+# Host          : eukarya
+# File          : usb2config
+# Author        : ALX
+# Creation      : 2020-03-13
+# Last Revision : 2020-09-28
+# Description   : Copy config from hdd-formicidae
+# *****************************************************************************
+
+#Finir par / (c'est important)
+SOURCE=/media/hdd-formicidae/usb-config
+DEST=/home/alexandra
+REFS=$SOURCE/ref
+REF=sarbecovirus
+HOSTNAME=`hostname`
+LOG=_copied
+MESSAGE="COPY config ($REF => $DEST)"
+PERM="root"
+
+if [[ ! -d $SOURCE ]]; then
+    SOURCE=/media/eukarya/usb-config
+fi
+
+if [[ ! -d $SOURCE ]]; then
+    echo "ERROR : $SOURCE doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d $DEST ]]; then
+    echo "ERROR : $DEST doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d $REFS ]]; then
+    echo "ERROR : $REFS doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ ! -d $REFS/$REF ]]; then
+    echo "ERROR : $REFS/$REF doesn't exist (directory)"
+    exit 1
+fi
+
+if [[ $USER != $PERM ]]; then 
+    echo "ERROR : you are not $PERM !" 
+    exit 1
+fi
+
+cleanup()
+# example cleanup function
+{
+  echo "Cleaning..."
+  return $?
+}
+ 
+control_c()
+# run if user hits control-c
+{
+  echo -en "\n*** Ouch! Exiting ***\n"
+  cleanup
+  exit $?
+}
+
+create_dir()
+{
+    if [[ ! -d "$1" ]]
+    then
+	echo "- $1 is created"
+	mkdir -p "$1"
+    fi
+}
+
+create_link()
+{
+    if [[ ! -h "$DEST/$2" ]]
+    then
+	echo "- $DEST/$2 is created"
+	ln -s "$1/$2" "$DEST/$2"
+    else
+	echo "- $DEST/$2 already exists (symbolic link)"
+    fi
+    chown -v alexandra:alexandra "$DEST/$2"
+}
+
+copy_file()
+{
+    if [[ -d $2 ]]
+    then
+	echo "- $1 is copied in $2"
+	cp $1 $2
+    fi
+}
+
+# trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
+# ------------------------------------------------------------------------------
+# GREETINGS
+
+ME=`basename "$0"`
+DATEBEGIN=$(date)
+echo $MESSAGE
+echo $DATEBEGIN
+
+# ------------------------------------------------------------------------------
+# WRITE LOG
+
+echo $ME > $DEST/$LOG
+echo $MESSAGE               >> $DEST/$LOG
+echo "Source : " $SOURCE    >> $DEST/$LOG
+echo "Ref    : " $REF       >> $DEST/$LOG
+echo "Dest   : " $DEST      >> $DEST/$LOG
+echo "Begin  : " $DATEBEGIN >> $DEST/$LOG
+
+# ------------------------------------------------------------------------------
+# UPDATE PACKAGES
+
+echo "- Update packages"
+apt-get update
+apt-get upgrade
+apt-get -my install rsync emacs gparted konsole net-tools xclip nfs-common filezilla g++ clementine calibre libreoffice okular darktable gimp gimp-ufraw inkscape gthumb freecad thunderbird enigmail deluge gqrx-sdr gvncviewer tigervnc-viewer asunder audacity puddletag handbrake libncurses5-dev libsfml-dev libasio-dev libqt4-dev libcdk5-dev libboost-dev libboost-chrono-dev vlc x11-apps locate dconf-editor pulseaudio-module-bluetooth bluez bluez-firmware lame guvcview fail2ban ftp ffmpeg fslint eyed3 python-eyed3
+apt-get -my install python-pip python3-pip
+pip install paho-mqtt
+
+# ------------------------------------------------------------------------------
+# CREATE MOUNT POINTS
+
+create_dir "/media/sd-lynx"
+create_dir "/media/usb-sec"
+create_dir "/media/sd-sec"
+create_dir "/media/sd-mitochondria"
+
+create_dir "/media/hdd-cyanobacteria"
+create_dir "/media/hdd-actinobacteria"
+create_dir "/media/hdd-filoviridae"
+create_dir "/media/hdd-formicidae"
+create_dir "/media/hdd-tarsius"
+
+create_dir "/media/alx-docs"
+create_dir "/media/alx-rech"
+create_dir "/media/alx-w"
+create_dir "/media/alx-vids"
+
+create_dir "/media/usb-share"
+create_dir "/media/usb-helloworld"
+create_dir "/media/usb-sec"
+
+create_dir "/mnt/lynx"
+create_dir "/mnt/sulfolobus"
+create_dir "/mnt/music.s"
+create_dir "/mnt/software.s"
+create_dir "/mnt/broadcast"
+
+create_dir "/mnt/hymenoptera"
+
+# ------------------------------------------------------------------------------
+# COPY /etc MODELS
+
+copy_file "$REFS/$REF/hosts.$REF" /etc/
+copy_file "$REFS/$REF/fstab.$REF" /etc/
+copy_file "$REFS/$REF/passwd.$REF" /etc/
+copy_file "$REFS/$REF/group.$REF" /etc/
+
+# ------------------------------------------------------------------------------
+# COPY ~/ MODELS
+copy_file "$REFS/$REF/.bashrc.$REF" $DEST/
+chown -v alexandra:alexandra $DEST/.bashrc.*
+
+copy_file "$REFS/$REF/.bash_aliases.$REF" $DEST/
+chown -v alexandra:alexandra $DEST/.bash_aliases.*
+
+# ------------------------------------------------------------------------------
+# CREATE ~/ DIRS
+# create_dir "$DEST/_incoming"
+# chown -Rv alexandra:alexandra $DEST/_incoming
+# create_dir "$DEST/_outgoing"
+# chown -Rv alexandra:alexandra $DEST/_outgoing
+
+# ------------------------------------------------------------------------------
+# COPY /bin/
+
+echo "- /usr/local/bin/* copied"
+cp -R $SOURCE/bin/* /usr/local/bin/
+
+# ------------------------------------------------------------------------------
+# CREATE SYMBOLIC LINKS
+
+create_link "/media/alx-home" "Bibliothèque calibre"
+create_link "/media/alx-home" "devel"
+create_link "/media/alx-home" "diy"
+
+create_link "/media/usb-sec" ".secure"
+
+# ------------------------------------------------------------------------------
+# SYNC FROM USB
+
+# echo "- $DEST/Documents syncing :"
+# rsync -avh --size-only --progress --delete $REFS/$REF/Documents $DEST/
+
+# echo "- $DEST/Bureau syncing :"
+# rsync -avh --size-only --progress --delete $REFS/$REF/Bureau $DEST/
+
+# echo "- $DEST/Images syncing :"
+# rsync -avh --size-only --progress --delete $SOURCE/Images $DEST/
+
+# ------------------------------------------------------------------------------
+# CLOSE LOG
+
+DATEEND=$(date)
+echo "End    : " $DATEEND   >> $DEST/$LOG
+
+# ------------------------------------------------------------------------------
+# EXIT
+
+# exit shell script with 0 signal
+exit 0

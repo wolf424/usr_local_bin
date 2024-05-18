@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+vlc rtsp://admin:T74ocMHZ@camputiere:554/live/ch0 --sout=file/ts:"camputiere `date --rfc-3339=s`.mpg"

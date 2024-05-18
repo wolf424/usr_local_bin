@@ -1,0 +1,26 @@
+#!/bin/bash
+# Script to send sms using Free API
+
+## VARIABLES
+
+CURL=/usr/bin/curl
+URL=https://smsapi.free-mobile.fr/sendmsg
+
+PASS="s2FqBuh34Ew276"
+USER="17870461"
+
+GSM="${1}"
+MESSAGE="${2}"
+
+help() {
+    echo "$0 PHONENUMBER MESSAGE"
+    echo "Send a sms to PHONENUMER"
+    exit 1
+}
+
+if [ "$2" == "" ]; then
+    help
+fi
+echo "$MESSAGE"
+$CURL -k -X POST "https://smsapi.free-mobile.fr/sendmsg?user=$USER&pass=$PASS&msg=$MESSAGE"
+exit 0

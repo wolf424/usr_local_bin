@@ -1,0 +1,12 @@
+#!/bin/bash
+
+domDevices=("dom-pc01" "dom-pc03" "dom-pc04" "dom-pc05" "dom-pc06" "dom-pc07" "dom-pc10" "dom-pc12" "dom-pc14" "dom-pc15" "dom-pc16" "dom-pw01" "dom-pw02" "dom-it01" "camatelier" "camcuisine" "camentree1" "caminf" "camputiere" "camserre" "camcouloir" "esp32cam01" "esp32cam02" "esp32cam04")
+
+for domDev in ${domDevices[@]}; do
+  if ping -c 1 $domDev &> /dev/null
+  then
+    echo "$domDev : OK"
+  else
+    echo "$domDev : NOK"
+  fi
+done
