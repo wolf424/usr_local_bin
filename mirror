@@ -1,24 +1,18 @@
 #!/bin/bash
 # *****************************************************************************
-# File          : backup
+# File          : _MIRROR
 # Author        : ALX
 # Creation      : 2024-08-25
 # Last Revision : 2024-08-25
-# Description   : backup $1 to $2
+# Description   : mirror $1 to $2
 # *****************************************************************************
 
 #Finir par / (c'est important)
 SOURCE="${1}"
 DEST="${2}"
 LOGDIR=$(basename "$1")
-LOG="_BACKUPED"
-MESSAGE="backup ($SOURCE => $DEST)"
-PERM="root"
-
-if [[ $USER != $PERM ]]; then 
-		echo "Ce script doit être lancé en tant que ${PERM} !" 
-		exit 1
-	fi 
+LOG="_MIRRORED"
+MESSAGE="mirror ($SOURCE => $DEST)"
 
 if [[ ! -d "${SOURCE}" ]]; then
     echo "ERROR : ${SOURCE} doesn't exist (directory)"
@@ -50,23 +44,21 @@ trap control_c SIGINT
 
 ME=`basename "$0"`
 DATEBEGIN=$(date)
-echo $MESSAGE
-echo $ME                     > "${SOURCE}"/"${LOG}"
-echo $MESSAGE               >> "${SOURCE}"/"${LOG}"
-echo "Source : " $SOURCE    >> "${SOURCE}"/"${LOG}"
-echo "Dest   : " $DEST      >> "${SOURCE}"/"${LOG}"
-echo "Begin  : " $DATEBEGIN >> "${SOURCE}"/"${LOG}"
 
 rsync -avh --size-only --progress --delete "${SOURCE}" "${DEST}"
 
+echo $MESSAGE
+echo $ME                     > "${DEST}"/"${LOG}"
+echo $MESSAGE               >> "${DEST}"/"${LOG}"
+echo "Source : " $SOURCE    >> "${DEST}"/"${LOG}"
+echo "Dest   : " $DEST      >> "${DEST}"/"${LOG}"
+echo "Begin  : " $DATEBEGIN >> "${DEST}"/"${LOG}"
 # echo "SOURCE=${SOURCE}"
 # echo "LOG=${LOG}"
 # echo "DEST=${DEST}"
 # echo "LOGDIR=${LOGDIR}"
-
 DATEEND=$(date)
-echo "End    : " $DATEEND   >> "${SOURCE}"/"${LOG}"
-cp "${SOURCE}/${LOG}" "${DEST}"
+echo "End    : " $DATEEND   >> "${DEST}"/"${LOG}"
 
 # exit shell script with 0 signal
 exit 0
