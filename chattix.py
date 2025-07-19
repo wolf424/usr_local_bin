@@ -1,5 +1,3 @@
-#!/home/alexandra/.venvs/MyEnv/bin/python
-
 # #####################################################
 # IMPORT
 
@@ -17,7 +15,8 @@ from os.path import exists
 parser = argparse.ArgumentParser(description='Aide shell par chatGPT.')
 parser.add_argument('question', type=str, help='Une question sur le shell linux.')
 parser.add_argument('-v', '--verbose', action='store_true', help='Mode verbeux.')
-parser.add_argument('-e', '--expert', action='store_true', help='J\'ai un niveau expert.')
+parser.add_argument('-e', '--expert', action='store_true', help='J\'ai un niveau expert')
+parser.add_argument('--style', choices=['gitan', 'chat', "grossier","sexy","triste","boomer","technocrate","verlan"], required=False, help='Style verbal')
 args = parser.parse_args()
 
 # Question to chatGPT
@@ -29,6 +28,23 @@ if args.expert:
 else:
     niveau="J'ai un niveau débutant"
 
+consigne_style=""
+if args.style == 'gitan':
+    consigne_style = "\nParle moi comme si on était tous les deux des gitans, avec des métaphores en lien avec la culture des gens du voyage."
+elif args.style == 'chat':
+    consigne_style = "\nImagine que tu es un chat, Pponctue tes phrase par des miaulements et fais des allusions à tes centres d'intérêt de chat."
+elif args.style == 'grossier':
+    consigne_style = "\nParle moi comme si tu étais un grossier personnage, méprisant et vulgaire. Ponctue tes phrases avec des insultes ou des onomatopées de rôt et de pets."
+elif args.style == 'sexy':
+    consigne_style = "\nParle moi comme si tu étais une fille qui essaie de me séduire. Complimente moi sur mon physique."
+elif args.style == 'triste':
+    consigne_style = "\nParle moi comme si tu étais très déprimé, au bout de ta vie. Intercale des phrases pour me dire combien tu vas mal."
+elif args.style == 'boomer':
+    consigne_style = "\nParle moi comme si tu étais un vieux boomer complètement dépassé par l'informatique et le progrès. Ajoute des phrase pour me dire combien tout était mieux de ton temps."
+elif args.style == 'technocrate':
+    consigne_style = "\nParle moi dans un langage technocratique, comme si un politique faisait un discours aride meublé avec des phrases creuses. Use de la langue de bois."
+elif args.style == 'verlan':
+    consigne_style = "\nParle moi en verlan, à la manière d'un jeune des cités dans les années 80. Fais des allusions aux objets à la mode chez les jeunes dans les années 80."
 
 # #####################################################
 # CONST
@@ -140,8 +156,8 @@ Je suis l'utilisateur : {}\n\
 Mon répertoire courant est : {}\n\
 Il contient les fichiers suivants : {}\n\
 Voici ma question: \"{}\"\n\
-Réponds à la question (sans l'afficher). Si nécessaire, écris la commande shell à taper en commençant la ligne par le symbole $\n\
-Texte simple uniquement, pas de markdown.".format(context,niveau,uname,shell,user,pwd,files,question)
+Réponds à la question (sans l'afficher). Si nécessaire, écris la commande shell à taper, dans une ligne à part, en commençant par le symbole $\n\
+Texte simple uniquement, pas de markdown.{}".format(context,niveau,uname,shell,user,pwd,files,question,consigne_style)
 
 if args.verbose:
     print (custom_colors.VERBOSE + "# PROMPT :\n{}\n".format(prompt) + bcolors.ENDC)
