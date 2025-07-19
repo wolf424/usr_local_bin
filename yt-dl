@@ -79,11 +79,13 @@ fi
 
 OPT="$1"
 #cf https://github.com/ytdl-org/youtube-dl#user-content-format-selection-examples
+
 $YOUTUBEDL -if 'bestvideo[ext=mp4][height<=1080]+bestaudio[ext=m4a]/best[ext=mp4]/best' \
 	--download-archive $ALREADY \
 	-o "%(upload_date)s - %(uploader)s - %(playlist_index)s - %(title)s - %(id)s.%(ext)s"\
 	--all-subs --convert-subs srt --cookies "$COOKIES" \
 	"$1" --verbose $ARGS
+
 
 #  youtube-dl -U && youtube-dl -if mp4 --all-subs --convert-subs srt --cookies "usr/local/bin/google.fr_cookies.txt" --cookies "/usr/local/bin/youtube.com_cookies.txt" -u "zdena.sevicesalapersonne@gmail.com" $SOURCE
 
