@@ -1,0 +1,9 @@
+#!/bin/bash
+MyDelay=0.5
+while :
+do
+  /usr/local/bin/wled/wled-pokemon-bulbizarre >/dev/null 2>/dev/null
+  sleep $MyDelay
+  /usr/local/bin/wled/wled-swastika >/dev/null 2>/dev/null
+  sleep $MyDelay
+done
