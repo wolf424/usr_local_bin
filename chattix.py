@@ -179,6 +179,11 @@ for line in answer.splitlines():
     if line.startswith("$ "):
         print(custom_colors.SHELL + line + bcolors.ENDC)
         line = re.sub("^\$ ","",line)
-        pyperclip.copy(line)
+        try:
+            pyperclip.copy(line)
+        except:
+            if args.verbose:
+                print (custom_colors.VERBOSE + "Copie vers presse-papier impossible" + bcolors.ENDC)
+
     else:
         print(line)
