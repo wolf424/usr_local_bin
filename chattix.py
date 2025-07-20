@@ -8,6 +8,7 @@ import re
 import pyperclip
 import argparse
 from os.path import exists
+import textwrap
 
 # #####################################################
 # PARSE COMMAND LINE ARGUMENTS
@@ -16,7 +17,7 @@ parser = argparse.ArgumentParser(description='Aide shell par chatGPT.')
 parser.add_argument('question', type=str, help='Une question sur le shell linux.')
 parser.add_argument('-v', '--verbose', action='store_true', help='Mode verbeux.')
 parser.add_argument('-e', '--expert', action='store_true', help='J\'ai un niveau expert')
-parser.add_argument('--style', choices=['gitan', 'chat', "grossier","sexy","triste","boomer","technocrate","verlan"], required=False, help='Style verbal')
+parser.add_argument('--style', choices=['gitan', 'chat', "grossier","sexy","triste","boomer","technocrate","verlan","louchebem","lacan","audiard"], required=False, help='Style verbal')
 args = parser.parse_args()
 
 # Question to chatGPT
@@ -45,6 +46,12 @@ elif args.style == 'technocrate':
     consigne_style = "\nParle moi dans un langage technocratique, comme si un politique faisait un discours aride meublé avec des phrases creuses. Use de la langue de bois."
 elif args.style == 'verlan':
     consigne_style = "\nParle moi en verlan, à la manière d'un jeune des cités dans les années 80. Fais des allusions aux objets à la mode chez les jeunes dans les années 80."
+elif args.style == 'louchebem':
+    consigne_style = "\nParle moi en louchebem, comme si tu étais un boucher à l'ancienne."
+elif args.style == 'lacan':
+    consigne_style = "\nParle moi comme si tu étais un vieux psychanalyste lacanien, pédant et imbu de sa personne. Utilise du jargon propre à Lacan. A la fin, demande à l'utilisateur de payer cette séance, de préférence en espèces."
+elif args.style == 'audiard':
+    consigne_style = "\nImagine que tu es un parain gangster dans un film d'audiard. Tu t'exprime à la manière des tontons flingueurs."
 
 # #####################################################
 # CONST
@@ -87,6 +94,8 @@ class custom_colors:
 # GPT settings
 GPT_ROLE = "Tu es un sysadmin linux, professeur d'informatique et excellent pédagogue. Tu me tutoies"
 
+columns = os.get_terminal_size().columns
+    
 # #####################################################
 # GET CONTEXT
 
@@ -175,6 +184,7 @@ response = client.chat.completions.create(
 # Extracting the Models Answer
 answer = response.choices[0].message.content
 
+# Print each line.
 for line in answer.splitlines():
     if line.startswith("$ "):
         print(custom_colors.SHELL + line + bcolors.ENDC)
@@ -186,4 +196,8 @@ for line in answer.splitlines():
                 print (custom_colors.VERBOSE + "Copie vers presse-papier impossible" + bcolors.ENDC)
 
     else:
-        print(line)
+        # Wrap this text.
+        wrapper = textwrap.TextWrapper(width=columns)
+        word_list = wrapper.wrap(text=line)
+        for element in word_list:
+            print(element)
