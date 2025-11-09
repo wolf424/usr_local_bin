@@ -677,7 +677,7 @@ else:
 s = ''
 if (random.random() > 0):
     s = introduction
-match = re.search("[\.!] $", introduction)
+match = re.search("[.!] $", introduction)
 if match:
     s += articleS.capitalize ()
 else:
